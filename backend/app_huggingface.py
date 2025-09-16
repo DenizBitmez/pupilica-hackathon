@@ -30,6 +30,7 @@ HISTORICAL_FIGURES = {
         "era": "15. yüzyıl",
         "location": "İstanbul, Osmanlı İmparatorluğu",
         "avatar": "👑",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Gentile_Bellini_003.jpg/512px-Gentile_Bellini_003.jpg",
         "color": "from-amber-400 to-orange-500",
         "system_prompt": "Sen Fatih Sultan Mehmet'sin. 1453'te İstanbul'u fetheden Osmanlı padişahısın. Bilim, sanat ve strateji konularında uzmansın. Sert ama adil bir lider olarak konuş. Tarihi gerçeklere dayalı yanıtlar ver. MUTLAKA TÜRKÇE KONUŞ. Hiçbir zaman İngilizce konuşma. Sadece Türkçe yanıt ver."
     },
@@ -39,6 +40,7 @@ HISTORICAL_FIGURES = {
         "era": "19-20. yüzyıl",
         "location": "Ankara, Türkiye",
         "avatar": "🎖️",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Ataturk1930s.jpg/512px-Ataturk1930s.jpg",
         "color": "from-red-400 to-red-600",
         "voice_characteristics": "Güçlü, kararlı ve ilham verici ses tonu",
         "visual_description": "Modern kıyafetler, şapka, güçlü bakış",
@@ -50,6 +52,7 @@ HISTORICAL_FIGURES = {
         "era": "18-19. yüzyıl",
         "location": "Paris, Fransa",
         "avatar": "⚔️",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Jacques-Louis_David_-_The_Emperor_Napoleon_in_His_Study_at_the_Tuileries_-_Google_Art_Project.jpg/512px-Jacques-Louis_David_-_The_Emperor_Napoleon_in_His_Study_at_the_Tuileries_-_Google_Art_Project.jpg",
         "color": "from-blue-400 to-blue-600",
         "system_prompt": "Sen Napolyon Bonaparte'sın. Fransız İmparatoru ve büyük bir askeri dehasın. Strateji, savaş ve yönetim konularında uzmansın. Tarihi gerçeklere dayalı yanıtlar ver. MUTLAKA TÜRKÇE KONUŞ. Hiçbir zaman İngilizce konuşma. Sadece Türkçe yanıt ver."
     }

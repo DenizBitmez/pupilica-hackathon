@@ -8,18 +8,25 @@ interface ChatInterfaceProps {
   figure: HistoricalFigure;
   socket: Socket | null;
   isConnected: boolean;
+  onListeningChange?: (v: boolean) => void;
+  onMouthOpenChange?: (v: number | undefined) => void;
+  onSpeakingChange?: (v: boolean) => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   figure,
   socket,
-  isConnected
+  isConnected,
+  onListeningChange,
+  onMouthOpenChange,
+  onSpeakingChange
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -43,10 +50,121 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         };
         setMessages(prev => [...prev, newMessage]);
         setIsLoading(false);
-        
-        // Avatar konuşma animasyonu
-        setIsAvatarSpeaking(true);
-        setTimeout(() => setIsAvatarSpeaking(false), 3000);
+
+        // Auto-play TTS if available and drive speaking state by playback
+        if (data.audio) {
+          const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+          audioRef.current = audio;
+          setIsAvatarSpeaking(true);
+          onSpeakingChange?.(true);
+          audio.onended = () => setIsAvatarSpeaking(false);
+          audio.onended = () => {
+            setIsAvatarSpeaking(false);
+            onSpeakingChange?.(false);
+            onMouthOpenChange?.(undefined);
+          };
+          // Improved lip-sync with threshold-based mouth shapes
+          try {
+            const AudioContextCtor = (window as any).AudioContext || (window as any).webkitAudioContext;
+            if (AudioContextCtor) {
+              const ctx = new AudioContextCtor();
+              const source = ctx.createMediaElementSource(audio);
+              const analyser = ctx.createAnalyser();
+              analyser.fftSize = 512;
+              analyser.smoothingTimeConstant = 0.8;
+              const dataArray = new Uint8Array(analyser.frequencyBinCount);
+              source.connect(analyser);
+              analyser.connect(ctx.destination);
+              
+              // Threshold-based mouth shapes: 0=closed, 1=slightly open, 2=open, 3=wide open
+              const getMouthShape = (amplitude: number) => {
+                if (amplitude < 5) return 0;      // closed
+                if (amplitude < 15) return 1;     // slightly open
+                if (amplitude < 30) return 2;     // open
+                return 3;                         // wide open
+              };
+              
+              const tick = () => {
+                if (!audio.paused) {
+                  analyser.getByteTimeDomainData(dataArray);
+                  // Calculate RMS amplitude
+                  let sum = 0;
+                  for (let i = 0; i < dataArray.length; i++) {
+                    const sample = (dataArray[i] - 128) / 128;
+                    sum += sample * sample;
+                  }
+                  const rms = Math.sqrt(sum / dataArray.length);
+                  const amplitude = rms * 100; // Scale to 0-100
+                  const mouthShape = getMouthShape(amplitude);
+                  onMouthOpenChange?.(mouthShape);
+                  requestAnimationFrame(tick);
+                }
+              };
+              requestAnimationFrame(tick);
+            }
+          } catch {}
+          audio.play().catch(() => {
+            // Autoplay engellendiyse butonla çalma seçeneği kalır
+            setIsAvatarSpeaking(false);
+            onSpeakingChange?.(false);
+            // Web Speech Synthesis fallback
+            try {
+              if ('speechSynthesis' in window) {
+                const utter = new SpeechSynthesisUtterance(data.response);
+                utter.lang = 'tr-TR';
+                try {
+                  const stored = localStorage.getItem('tts_settings');
+                  if (stored) {
+                    const s = JSON.parse(stored);
+                    utter.rate = s.rate ?? 1;
+                    utter.pitch = s.pitch ?? 1;
+                    utter.volume = s.volume ?? 1;
+                    if (s.voice) {
+                      const vs = window.speechSynthesis.getVoices();
+                      const found = vs.find(v => v.name === s.voice);
+                      if (found) utter.voice = found;
+                    }
+                  }
+                } catch {}
+                utter.onstart = () => { setIsAvatarSpeaking(true); onSpeakingChange?.(true); };
+                utter.onend = () => { setIsAvatarSpeaking(false); onSpeakingChange?.(false); onMouthOpenChange?.(undefined); };
+                window.speechSynthesis.speak(utter);
+              }
+            } catch {}
+          });
+        } else {
+          // Backend sesi yoksa Web Speech Synthesis ile oku
+          try {
+            if ('speechSynthesis' in window) {
+              const utter = new SpeechSynthesisUtterance(data.response);
+              utter.lang = 'tr-TR';
+              try {
+                const stored = localStorage.getItem('tts_settings');
+                if (stored) {
+                  const s = JSON.parse(stored);
+                  utter.rate = s.rate ?? 1;
+                  utter.pitch = s.pitch ?? 1;
+                  utter.volume = s.volume ?? 1;
+                  if (s.voice) {
+                    const vs = window.speechSynthesis.getVoices();
+                    const found = vs.find(v => v.name === s.voice);
+                    if (found) utter.voice = found;
+                  }
+                }
+              } catch {}
+              utter.onstart = () => { setIsAvatarSpeaking(true); onSpeakingChange?.(true); };
+              utter.onend = () => { setIsAvatarSpeaking(false); onSpeakingChange?.(false); onMouthOpenChange?.(undefined); };
+              window.speechSynthesis.speak(utter);
+            } else {
+              // Ses yoksa kısa bir konuşma animasyonu gösterebiliriz
+              setIsAvatarSpeaking(true);
+              setTimeout(() => setIsAvatarSpeaking(false), 1200);
+            }
+          } catch {
+            setIsAvatarSpeaking(true);
+            setTimeout(() => setIsAvatarSpeaking(false), 1200);
+          }
+        }
       });
 
       socket.on('error', (data) => {
@@ -128,18 +246,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const startListening = () => {
-    setIsListening(true);
-    // Burada Web Speech API kullanılabilir
-    // Şimdilik placeholder
-    setTimeout(() => {
+    try {
+      // webkitSpeechRecognition (Chrome)
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        setInputMessage('Tarayıcı mikrofonu desteklemiyor');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'tr-TR';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      setIsListening(true);
+      onListeningChange?.(true);
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript as string;
+        setInputMessage(transcript);
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+        onListeningChange?.(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        onListeningChange?.(false);
+      };
+
+      recognition.start();
+    } catch (e) {
       setIsListening(false);
-      setInputMessage('Sesli giriş henüz aktif değil');
-    }, 2000);
+      onListeningChange?.(false);
+      setInputMessage('Mikrofon başlatılamadı');
+    }
   };
 
   const playAudio = (audioBase64: string) => {
     const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
-    audio.play();
+    audioRef.current = audio;
+    setIsAvatarSpeaking(true);
+    onSpeakingChange?.(true);
+    audio.onended = () => { setIsAvatarSpeaking(false); onSpeakingChange?.(false); onMouthOpenChange?.(undefined); };
+    audio.play().catch(() => setIsAvatarSpeaking(false));
   };
 
   return (

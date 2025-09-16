@@ -16,6 +16,8 @@ function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [mouthOpen, setMouthOpen] = useState<number | undefined>(undefined);
   const [currentView, setCurrentView] = useState<'selection' | 'avatar' | 'chat'>('selection');
 
   useEffect(() => {
@@ -69,7 +71,8 @@ function App() {
         <AnimatedAvatar
           character={selectedFigure}
           isSpeaking={isAvatarSpeaking}
-          isListening={false}
+          isListening={isListening}
+          mouthOpen={mouthOpen}
           onStartChat={handleStartChat}
         />
       )}
@@ -102,6 +105,7 @@ function App() {
                     figure={selectedFigure}
                     isConnected={isConnected}
                     isSpeaking={isAvatarSpeaking}
+                    isListening={isListening}
                   />
                 </div>
               </div>
@@ -112,6 +116,9 @@ function App() {
                   figure={selectedFigure}
                   socket={socket}
                   isConnected={isConnected}
+                  onListeningChange={setIsListening}
+                  onMouthOpenChange={setMouthOpen}
+                  onSpeakingChange={setIsAvatarSpeaking}
                 />
               </div>
 

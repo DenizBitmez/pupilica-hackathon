@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HistoricalFigure } from '../types/historical';
 
 interface AnimatedAvatarProps {
   character: HistoricalFigure;
   isSpeaking: boolean;
   isListening: boolean;
+  mouthOpen?: number;
   onStartChat: () => void;
 }
 
@@ -12,11 +13,14 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
   character,
   isSpeaking,
   isListening,
-  onStartChat
+  onStartChat,
+  mouthOpen
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [currentAnimation, setCurrentAnimation] = useState<'entrance' | 'idle' | 'speaking' | 'listening'>('entrance');
   const [greetingMessage, setGreetingMessage] = useState('');
+  const [introMouthOpen, setIntroMouthOpen] = useState<number | undefined>(undefined);
+  const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
     // Giriş animasyonu
@@ -30,15 +34,56 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
       'napoleon': 'Bonjour! Ben Napolyon Bonaparte. Fransız İmparatoru. Strateji ve savaş konularında uzmanım.'
     };
     
-    setTimeout(() => {
-      setGreetingMessage(greetings[character.id as keyof typeof greetings] || 'Merhaba! Benimle sohbet etmek ister misiniz?');
-      setCurrentAnimation('idle');
-    }, 2000);
+    // Mesajı hemen hazırla ve kısa süre sonra idle'a geç
+    setGreetingMessage(greetings[character.id as keyof typeof greetings] || 'Merhaba! Benimle sohbet etmek ister misiniz?');
+    setTimeout(() => setCurrentAnimation('idle'), 400);
 
     return () => {
       setIsVisible(false);
+      // Her ihtimale karşı TTS iptal
+      try { window.speechSynthesis.cancel(); } catch {}
     };
   }, [character]);
+
+  // Greeting otomatik Web Speech TTS ve basit lip-sync
+  useEffect(() => {
+    if (!greetingMessage) return;
+    try {
+      if ('speechSynthesis' in window) {
+        const utter = new SpeechSynthesisUtterance(greetingMessage);
+        utter.lang = 'tr-TR';
+        try {
+          const stored = localStorage.getItem('tts_settings');
+          if (stored) {
+            const s = JSON.parse(stored);
+            utter.rate = s.rate ?? 1;
+            utter.pitch = s.pitch ?? 1;
+            utter.volume = s.volume ?? 1;
+            if (s.voice) {
+              const vs = window.speechSynthesis.getVoices();
+              const found = vs.find(v => v.name === s.voice);
+              if (found) utter.voice = found;
+            }
+          }
+        } catch {}
+        utter.onstart = () => {
+          setIntroMouthOpen(8);
+          // Konuşma animasyonuna geç
+          // Not: App üzerinden de gelebilir; burada local görsel geri bildirim sağlıyoruz
+        };
+        utter.onboundary = () => {
+          // Kelime sınırlarında ağız açıklığını hafifçe değiştir
+          const v = 6 + Math.floor(Math.random() * 10);
+          setIntroMouthOpen(v);
+        };
+        utter.onend = () => {
+          setIntroMouthOpen(undefined);
+        };
+        utterRef.current = utter;
+        window.speechSynthesis.speak(utter);
+      }
+    } catch {}
+  }, [greetingMessage]);
 
   useEffect(() => {
     if (isSpeaking) {
@@ -83,8 +128,19 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
       }`}>
         {/* Avatar Container */}
         <div className="text-center mb-8">
-          <div className={`${getAvatarSize()} mx-auto rounded-full bg-gradient-to-br ${character.color || 'from-gray-400 to-gray-600'} flex items-center justify-center text-8xl shadow-2xl transition-all duration-500 ${getAvatarAnimation()}`}>
-            {character.avatar || '👤'}
+          <div className={`${getAvatarSize()} mx-auto rounded-full bg-gradient-to-br ${character.color || 'from-gray-400 to-gray-600'} flex items-center justify-center overflow-hidden shadow-2xl transition-all duration-500 ${getAvatarAnimation()}`}>
+            {character.image ? (
+              <img src={character.image} alt={character.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-8xl">{character.avatar || '👤'}</span>
+            )}
+            {currentAnimation === 'speaking' && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1">
+                <span className="w-2 bg-white/90 rounded-sm animate-[bounce_0.6s_infinite]" style={{ height: '12px' }}></span>
+                <span className="w-2 bg-white/90 rounded-sm animate-[bounce_0.6s_infinite_0.2s]" style={{ height: '16px' }}></span>
+                <span className="w-2 bg-white/90 rounded-sm animate-[bounce_0.6s_infinite_0.4s]" style={{ height: '20px' }}></span>
+              </div>
+            )}
           </div>
           
           {/* Sparkle Effects */}
@@ -101,6 +157,38 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
             🌟
           </div>
         </div>
+
+        {/* Simple SVG mouth overlay for lip-sync approximation */}
+        {currentAnimation === 'speaking' && (
+          <svg
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+            width="140"
+            height="140"
+            viewBox="0 0 140 140"
+          >
+            {/* Improved mouth shapes based on audio amplitude */}
+            {(() => {
+              const currentMouth = mouthOpen !== undefined ? mouthOpen : (introMouthOpen !== undefined ? introMouthOpen : 1);
+              const mouthShapes = [
+                { ry: 2, rx: 12 },   // 0: closed
+                { ry: 4, rx: 14 },   // 1: slightly open
+                { ry: 8, rx: 16 },   // 2: open
+                { ry: 12, rx: 18 }   // 3: wide open
+              ];
+              const shape = mouthShapes[Math.min(3, Math.max(0, currentMouth))] || mouthShapes[1];
+              return (
+                <ellipse 
+                  cx="70" 
+                  cy="92" 
+                  rx={shape.rx} 
+                  ry={shape.ry} 
+                  fill="rgba(0,0,0,0.35)"
+                  className="transition-all duration-100"
+                />
+              );
+            })()}
+          </svg>
+        )}
 
         {/* Character Info */}
         <div className="text-center mb-6">

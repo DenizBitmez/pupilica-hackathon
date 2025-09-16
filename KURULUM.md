@@ -67,18 +67,21 @@ npm start
 ### ✅ Tamamlanan Özellikler
 - [x] React TypeScript frontend
 - [x] Flask backend API
-- [x] OpenAI GPT-3.5 entegrasyonu
-- [x] Text-to-Speech (TTS) desteği
+- [x] Ollama/Hugging Face tabanlı sohbet entegrasyonu
+- [x] Text-to-Speech (TTS): Backend gTTS + Web Speech fallback
 - [x] Socket.io gerçek zamanlı iletişim
 - [x] Tarihi figür seçimi
 - [x] Sohbet arayüzü
 - [x] Interaktif harita (Leaflet)
-- [x] Avatar sistemi
+- [x] Avatar sistemi (gerçek portre + konuşma görselleştirici)
+- [x] Basit lip-sync (Web Audio amplitude + SVG ağız animasyonu)
+- [x] Sesli giriş (Web Speech Recognition – Chrome)
 - [x] Modern UI (Tailwind CSS)
 
 ### 🔄 Geliştirilecek Özellikler
 - [ ] 3D avatar animasyonları (Three.js)
-- [ ] Sesli giriş (Speech-to-Text)
+- [ ] Gelişmiş lip-sync (fonem tabanlı/sprite)
+- [ ] TTS Ayarları paneli (ses seçimi, hız, perde, ses seviyesi)
 - [ ] Daha fazla tarihi figür
 - [ ] Tarihi olay zaman çizelgesi
 - [ ] Çoklu dil desteği

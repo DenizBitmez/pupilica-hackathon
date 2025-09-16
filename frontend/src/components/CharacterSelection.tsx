@@ -17,7 +17,8 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onCharacterSele
       location: 'İstanbul, Osmanlı İmparatorluğu',
       personality: 'Cesur, stratejik düşünen, bilim ve sanata değer veren büyük bir lider. Konstantinopolis\'i fethederek tarihi değiştiren fatih.',
       avatar: '👑',
-      color: 'from-amber-400 to-orange-500'
+      color: 'from-amber-400 to-orange-500',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Gentile_Bellini_003.jpg/512px-Gentile_Bellini_003.jpg'
     },
     {
       id: 'ataturk',
@@ -26,7 +27,8 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onCharacterSele
       location: 'Türkiye',
       personality: 'Türkiye Cumhuriyeti\'nin kurucusu, büyük reformcu ve lider. Modern Türkiye\'nin mimarı.',
       avatar: '🎖️',
-      color: 'from-red-400 to-red-600'
+      color: 'from-red-400 to-red-600',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Ataturk1930s.jpg/512px-Ataturk1930s.jpg'
     },
     {
       id: 'napoleon',
@@ -35,7 +37,8 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onCharacterSele
       location: 'Fransa',
       personality: 'Fransız İmparatoru, büyük askeri deha ve stratejist. Avrupa\'yı fetheden büyük lider.',
       avatar: '⚔️',
-      color: 'from-blue-400 to-blue-600'
+      color: 'from-blue-400 to-blue-600',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Jacques-Louis_David_-_The_Emperor_Napoleon_in_His_Study_at_the_Tuileries_-_Google_Art_Project.jpg/512px-Jacques-Louis_David_-_The_Emperor_Napoleon_in_His_Study_at_the_Tuileries_-_Google_Art_Project.jpg'
     }
   ];
 
