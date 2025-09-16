@@ -1,0 +1,18 @@
+warning: in the working copy of 'backend/app_huggingface.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/AnimatedAvatar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/Avatar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/CharacterSelection.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/ChatInterface.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/HistoricalFigureSelector.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/InteractiveMap.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/types/historical.ts', LF will be replaced by CRLF the next time Git touches it
+backend/app_huggingface.py
+frontend/package-lock.json
+frontend/package.json
+frontend/src/App.tsx
+frontend/src/components/Avatar.tsx
+frontend/src/components/ChatInterface.tsx
+frontend/src/components/HistoricalFigureSelector.tsx
+frontend/src/components/InteractiveMap.tsx
+frontend/src/types/historical.ts

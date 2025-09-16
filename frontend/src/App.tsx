@@ -5,8 +5,8 @@ import HistoricalFigureSelector from './components/HistoricalFigureSelector';
 import InteractiveMap from './components/InteractiveMap';
 import Avatar from './components/Avatar';
 import Header from './components/Header';
-import CharacterSelection from './components/CharacterSelection';
 import AnimatedAvatar from './components/AnimatedAvatar';
+import CharacterSelection from './components/CharacterSelection';
 import { HistoricalFigure } from './types/historical';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -16,8 +16,6 @@ function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
-  const [showCharacterSelection, setShowCharacterSelection] = useState(true);
-  const [showAnimatedAvatar, setShowAnimatedAvatar] = useState(false);
   const [currentView, setCurrentView] = useState<'selection' | 'avatar' | 'chat'>('selection');
 
   useEffect(() => {
@@ -48,18 +46,15 @@ function App() {
   const handleCharacterSelect = (character: HistoricalFigure) => {
     setSelectedFigure(character);
     setCurrentView('avatar');
-    setShowAnimatedAvatar(true);
   };
 
   const handleStartChat = () => {
     setCurrentView('chat');
-    setShowAnimatedAvatar(false);
   };
 
   const handleBackToSelection = () => {
     setCurrentView('selection');
     setSelectedFigure(null);
-    setShowAnimatedAvatar(false);
   };
 
   return (
