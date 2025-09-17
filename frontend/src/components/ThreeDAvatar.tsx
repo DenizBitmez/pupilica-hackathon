@@ -142,3 +142,4 @@ const ThreeDAvatar: React.FC<ThreeDAvatarProps> = ({
 };
 
 export default ThreeDAvatar;
+

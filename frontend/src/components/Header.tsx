@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpenIcon, SparklesIcon, AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, SparklesIcon, AdjustmentsHorizontalIcon, XMarkIcon, RocketLaunchIcon } from '@heroicons/react/24/outline';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onShowHackathonFeatures?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onShowHackathonFeatures }) => {
   const [open, setOpen] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voice, setVoice] = useState<string>('');
@@ -66,6 +70,16 @@ const Header: React.FC = () => {
               <AdjustmentsHorizontalIcon className="h-5 w-5" />
               <span>TTS Ayarları</span>
             </button>
+            {onShowHackathonFeatures && (
+              <button
+                onClick={onShowHackathonFeatures}
+                className="ml-2 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-sm flex items-center space-x-1 text-white font-bold animate-pulse"
+                title="Hackathon Özellikleri"
+              >
+                <RocketLaunchIcon className="h-5 w-5" />
+                <span>🚀 Hackathon</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

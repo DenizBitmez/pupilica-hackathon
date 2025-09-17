@@ -12,3 +12,5 @@ PORT=5000
 # TTS Configuration
 TTS_LANGUAGE=tr
 TTS_SLOW=False
+
+GENERATE_SOURCEMAP=false

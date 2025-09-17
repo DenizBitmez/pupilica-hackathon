@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { HistoricalFigure, ChatMessage } from '../types/historical';
-import { PaperAirplaneIcon, MicrophoneIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, MicrophoneIcon, AcademicCapIcon, ClockIcon } from '@heroicons/react/24/outline';
+import AchievementSystem from './AchievementSystem';
+import HistoricalQuiz from './HistoricalQuiz';
+import HistoricalTimeline from './HistoricalTimeline';
 import Avatar from './Avatar';
 
 interface ChatInterfaceProps {
@@ -26,6 +29,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -192,6 +198,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
 
     setMessages(prev => [...prev, userMessage]);
+    setMessageCount(prev => prev + 1);
     setInputMessage('');
     setIsLoading(true);
 
@@ -457,6 +464,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Educational Features */}
+      <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">🎓 Eğitim Araçları</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowQuiz(true)}
+            className="flex items-center space-x-2 p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
+          >
+            <AcademicCapIcon className="h-5 w-5" />
+            <span className="font-medium">🧠 Quiz</span>
+          </button>
+          <button
+            onClick={() => setShowTimeline(true)}
+            className="flex items-center space-x-2 p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
+          >
+            <ClockIcon className="h-5 w-5" />
+            <span className="font-medium">📅 Zaman Çizelgesi</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Achievement System */}
+      <AchievementSystem 
+        character={figure} 
+        messageCount={messageCount} 
+        isVisible={true} 
+      />
+
+      {/* Quiz Modal */}
+      {showQuiz && (
+        <HistoricalQuiz 
+          character={figure} 
+          isVisible={showQuiz} 
+          onClose={() => setShowQuiz(false)} 
+        />
+      )}
+
+      {/* Timeline Modal */}
+      {showTimeline && (
+        <HistoricalTimeline 
+          character={figure} 
+          isVisible={showTimeline} 
+          onClose={() => setShowTimeline(false)} 
+        />
+      )}
     </div>
   );
 };

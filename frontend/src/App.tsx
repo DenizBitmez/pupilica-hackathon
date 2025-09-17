@@ -7,6 +7,7 @@ import Avatar from './components/Avatar';
 import Header from './components/Header';
 import AnimatedAvatar from './components/AnimatedAvatar';
 import CharacterSelection from './components/CharacterSelection';
+import HackathonFeatures from './components/HackathonFeatures';
 import { HistoricalFigure } from './types/historical';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -18,7 +19,8 @@ function App() {
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [mouthOpen, setMouthOpen] = useState<number | undefined>(undefined);
-  const [currentView, setCurrentView] = useState<'selection' | 'avatar' | 'chat'>('selection');
+  const [currentView, setCurrentView] = useState<'selection' | 'avatar' | 'chat' | 'hackathon'>('selection');
+  const [showHackathonFeatures, setShowHackathonFeatures] = useState(false);
 
   useEffect(() => {
     // Socket.io bağlantısı kur
@@ -54,6 +56,14 @@ function App() {
     setCurrentView('chat');
   };
 
+  const handleShowHackathonFeatures = () => {
+    setShowHackathonFeatures(true);
+  };
+
+  const handleCloseHackathonFeatures = () => {
+    setShowHackathonFeatures(false);
+  };
+
   const handleBackToSelection = () => {
     setCurrentView('selection');
     setSelectedFigure(null);
@@ -80,7 +90,7 @@ function App() {
       {/* Chat Interface View */}
       {currentView === 'chat' && selectedFigure && (
         <>
-          <Header />
+          <Header onShowHackathonFeatures={handleShowHackathonFeatures} />
           
           <main className="container mx-auto px-4 py-8">
             {/* Back Button */}
@@ -141,6 +151,15 @@ function App() {
             </div>
           </footer>
         </>
+      )}
+
+      {/* Hackathon Features Modal */}
+      {showHackathonFeatures && selectedFigure && (
+        <HackathonFeatures 
+          character={selectedFigure} 
+          isVisible={showHackathonFeatures}
+          onClose={handleCloseHackathonFeatures}
+        />
       )}
     </div>
   );
