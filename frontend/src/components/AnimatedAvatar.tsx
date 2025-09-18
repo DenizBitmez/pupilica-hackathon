@@ -22,17 +22,19 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
   const [introMouthOpen, setIntroMouthOpen] = useState<number | undefined>(undefined);
   const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [ctaVisible, setCtaVisible] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [showEvents, setShowEvents] = useState(false);
 
   useEffect(() => {
     // Giriş animasyonu
     setIsVisible(true);
     setCurrentAnimation('entrance');
     
-    // Karaktere göre detaylı tarihi hikaye
+    // Karaktere göre kısa tanıtım
     const greetings = {
-      'fatih_sultan_mehmet': 'Selam! Ben Fatih Sultan Mehmet. 1453 yılında Konstantinopolis\'i fethederek tarihi değiştirdim. 29 Mayıs günü, dev toplarımın sesiyle başlayan kuşatma 53 gün sürdü. Şehri aldığımda sadece 21 yaşındaydım. Bilim, sanat ve strateji konularında tutkulu bir liderdim. İstanbul\'u fethettikten sonra şehri yeniden inşa ettim, Ayasofya\'yı camiye çevirdim ve Topkapı Sarayı\'nı yaptırdım. Sorularınızı bekliyorum!',
-      'ataturk': 'Merhaba! Ben Mustafa Kemal Atatürk. 19 Mayıs 1919\'da Samsun\'a çıkarak Türk Kurtuluş Savaşı\'nı başlattım. 1923\'te Türkiye Cumhuriyeti\'ni kurdum ve ilk cumhurbaşkanı oldum. Harf devrimi, kadın hakları, eğitim reformları ve çağdaşlaşma hareketlerini gerçekleştirdim. "Hayatta en hakiki mürşit ilimdir" diyerek bilimi rehber edindim. Modern Türkiye\'nin mimarı olarak, ülkemizi çağdaş medeniyetler seviyesine çıkarmak için çalıştım. Size nasıl yardımcı olabilirim?',
-      'napoleon': 'Bonjour! Ben Napolyon Bonaparte. 1804\'te kendimi Fransız İmparatoru ilan ettim. Austerlitz, Jena, Friedland savaşlarında büyük zaferler kazandım. Avrupa\'nın büyük bölümünü fethettim. Waterloo\'da 1815\'te son yenilgimi aldım. Strateji, savaş ve yönetim konularında uzmanım. "İmpossible n\'est pas français" - İmkansız kelimesi Fransızca\'da yoktur derdim. Askeri deham ve yönetim yeteneklerimle tarihe geçtim.'
+      'fatih_sultan_mehmet': 'Selam! Ben Fatih Sultan Mehmet. Konstantinopolis\'i fetheden büyük fatih. Hayatımın önemli olaylarını dinlemek ister misiniz?',
+      'ataturk': 'Merhaba! Ben Mustafa Kemal Atatürk. Modern Türkiye\'nin kurucusu. Tarihi başarılarımı öğrenmek ister misiniz?',
+      'napoleon': 'Bonjour! Ben Napolyon Bonaparte. Avrupa\'nın fatihi. Askeri zaferlerimi ve stratejilerimi dinlemek ister misiniz?'
     } as Record<string, string>;
     
     // Mesajı hemen hazırla ve kısa süre sonra idle'a geç
@@ -46,12 +48,116 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
     };
   }, [character]);
 
-  const speakGreeting = () => {
-    if (!greetingMessage) return;
+  // Tarihi olaylar tanımları
+  const historicalEvents = {
+    'fatih_sultan_mehmet': [
+      {
+        id: 'constantinople_conquest',
+        title: 'Konstantinopolis Fethi',
+        icon: '🏰',
+        description: '1453 yılında Konstantinopolis\'i fethederek tarihi değiştirdim. 29 Mayıs günü, dev toplarımın sesiyle başlayan kuşatma 53 gün sürdü. Şehri aldığımda sadece 21 yaşındaydım. Bu fetih, Orta Çağ\'ın sonu ve Yeni Çağ\'ın başlangıcı olarak kabul edilir. Şehri almak için dev toplar döktürdüm, gemileri karadan yürüttüm ve Bizans\'ın son direnişini kırdım. Konstantinopolis\'in düşmesi, Avrupa\'da büyük bir şok yarattı ve Rönesans\'ın başlamasına katkı sağladı.'
+      },
+      {
+        id: 'hagia_sophia_conversion',
+        title: 'Ayasofya\'nın Camiiye Çevrilmesi',
+        icon: '🕌',
+        description: 'Fetihten sonra Ayasofya\'yı camiye çevirdim. Bu, İslam\'ın Konstantinopolis\'teki zaferinin sembolü oldu. Ayasofya, 916 yıl kilise olarak hizmet verdikten sonra camiye dönüştürüldü. Bu dönüşüm sadece dini bir değişim değil, aynı zamanda şehrin yeni kimliğinin simgesi oldu. Ayasofya\'nın mimari güzelliği korundu ve İslami unsurlar eklendi. Bugün hala bu muhteşem yapıyı görebilirsiniz.'
+      },
+      {
+        id: 'topkapi_palace',
+        title: 'Topkapı Sarayı\'nın İnşası',
+        icon: '🏛️',
+        description: 'Topkapı Sarayı\'nı yaptırdım ve burada yaşadım. Bu saray, Osmanlı İmparatorluğu\'nun yönetim merkezi oldu ve dünyanın en güzel saraylarından biri haline geldi. Saray, 400 yıl boyunca Osmanlı padişahlarının evi oldu. Topkapı Sarayı\'nda Harem, Divan-ı Hümayun, Hazine ve diğer önemli bölümler bulunuyordu. Bu saray, Osmanlı\'nın gücünü ve zenginliğini dünyaya gösteren bir simge oldu.'
+      },
+      {
+        id: 'scientific_achievements',
+        title: 'Bilim ve Sanat Patronajı',
+        icon: '📚',
+        description: 'Bilim, sanat ve strateji konularında tutkulu bir liderdim. İstanbul\'u fethettikten sonra şehri yeniden inşa ettim ve bilim insanlarını destekledim. Avrupa\'dan kaçan bilim insanlarını İstanbul\'a davet ettim. Matematik, astronomi, tıp ve diğer bilim dallarında çalışmalar yapılmasını teşvik ettim. İstanbul\'u sadece askeri bir merkez değil, aynı zamanda bilim ve kültür merkezi haline getirdim. Bu dönemde İstanbul, dünyanın en önemli bilim merkezlerinden biri oldu.'
+      }
+    ],
+    'ataturk': [
+      {
+        id: 'samsun_landing',
+        title: 'Samsun\'a Çıkış',
+        icon: '🚢',
+        description: '19 Mayıs 1919\'da Samsun\'a çıkarak Türk Kurtuluş Savaşı\'nı başlattım. Bu tarih, Türk milletinin yeniden doğuşunun başlangıcı oldu. Bandırma Vapuru ile Samsun\'a çıktığımda, Anadolu\'nun işgal altında olduğunu gördüm. Burada "Ya istiklal, ya ölüm!" parolasıyla mücadeleyi başlattım. Samsun\'a çıkışım, Türk milletinin kurtuluş mücadelesinin ilk adımıydı ve bu tarih, Türkiye\'de Gençlik ve Spor Bayramı olarak kutlanmaktadır.'
+      },
+      {
+        id: 'republic_founding',
+        title: 'Cumhuriyet\'in İlanı',
+        icon: '🏛️',
+        description: '1923\'te Türkiye Cumhuriyeti\'ni kurdum ve ilk cumhurbaşkanı oldum. Bu, Türk milletinin kendi kaderini tayin etme hakkının gerçekleşmesiydi. Cumhuriyet\'in ilanı ile 600 yıllık saltanat sistemi sona erdi ve modern bir devlet yapısı kuruldu. "Egemenlik kayıtsız şartsız milletindir" ilkesiyle, halkın yönetimde söz sahibi olmasını sağladım. Bu devrim, Türkiye\'yi çağdaş medeniyetler seviyesine çıkarma yolunda en önemli adımlardan biri oldu.'
+      },
+      {
+        id: 'alphabet_reform',
+        title: 'Harf Devrimi',
+        icon: '📝',
+        description: '1928\'de harf devrimini gerçekleştirdim. Arap harflerinden Latin harflerine geçiş, okuma yazma oranını artırdı ve modernleşmeyi hızlandırdı. Bu devrim ile Türkçe\'nin ses yapısına uygun yeni bir alfabe oluşturuldu. Harf devrimi, sadece bir yazı değişikliği değil, aynı zamanda kültürel ve sosyal bir dönüşümdü. Bu sayede okuma yazma oranı hızla arttı ve Türk milleti çağdaş dünyayla daha kolay iletişim kurabildi.'
+      },
+      {
+        id: 'women_rights',
+        title: 'Kadın Hakları',
+        icon: '👩',
+        description: 'Kadınlara seçme ve seçilme hakkı verdim. Türk kadını, dünyada bu hakkı elde eden ilk kadınlardan biri oldu. 1934\'te kadınlara milletvekili seçme ve seçilme hakkı tanıdım. Bu hak, birçok Avrupa ülkesinden önce verildi. Kadınların eğitim, çalışma ve sosyal hayatta aktif rol almasını sağladım. "Ey kahraman Türk kadını, sen yerde sürünmeye değil, omuzlar üzerinde göklere yükselmeye layıksın" sözümle kadınların değerini vurguladım.'
+      },
+      {
+        id: 'education_reform',
+        title: 'Eğitim Reformları',
+        icon: '🎓',
+        description: '"Hayatta en hakiki mürşit ilimdir" diyerek bilimi rehber edindim. Eğitim sistemini modernleştirdim ve herkese eğitim hakkı sağladım. Medreseleri kapatarak modern okullar açtım. Eğitimi laikleştirdim ve bilimsel temellere dayandırdım. Köy Enstitüleri\'ni kurarak köylü çocuklarının eğitim almasını sağladım. Bu reformlar sayesinde Türkiye, eğitim alanında büyük ilerlemeler kaydetti ve okuma yazma oranı hızla arttı.'
+      }
+    ],
+    'napoleon': [
+      {
+        id: 'emperor_coronation',
+        title: 'İmparatorluk İlanı',
+        icon: '👑',
+        description: '1804\'te kendimi Fransız İmparatoru ilan ettim. Notre Dame Katedrali\'nde yapılan törenle tarihe geçtim. Bu törende, Papa\'nın elinden tacı alarak kendi başıma taktım. Bu hareket, "İmparatorluğu kendi gücümle kazandım" mesajını veriyordu. İmparatorluk ilanım, Fransız Devrimi\'nin sona erdiğini ve yeni bir dönemin başladığını simgeliyordu. Bu unvanla, Avrupa\'nın en güçlü hükümdarı oldum.'
+      },
+      {
+        id: 'austerlitz_battle',
+        title: 'Austerlitz Savaşı',
+        icon: '⚔️',
+        description: '1805\'te Austerlitz\'de Avusturya ve Rusya\'ya karşı büyük zafer kazandım. Bu savaş, askeri dehamın en güzel örneklerinden biridir. "Üç İmparator Savaşı" olarak da bilinen bu savaşta, sayıca üstün düşman ordusunu yenmeyi başardım. Austerlitz Zaferi, askeri strateji ve taktik açısından tarihin en parlak örneklerinden biridir. Bu zaferle, Avrupa\'daki güç dengesini tamamen değiştirdim.'
+      },
+      {
+        id: 'jena_friedland',
+        title: 'Jena ve Friedland Zaferleri',
+        icon: '🏆',
+        description: '1806-1807\'de Jena ve Friedland savaşlarında Prusya ve Rusya\'ya karşı zaferler kazandım. Avrupa\'nın büyük bölümünü fethettim. Jena\'da Prusya ordusunu tamamen yok ettim ve Berlin\'e girdim. Friedland\'da ise Rus ordusunu yenerek Tilsit Antlaşması\'nı imzaladım. Bu zaferlerle, Avrupa\'da Napolyon düzenini kurmuş oldum. Kıta Ablukası\'nı başlatarak İngiltere\'yi ekonomik olarak zayıflatmaya çalıştım.'
+      },
+      {
+        id: 'waterloo_defeat',
+        title: 'Waterloo Yenilgisi',
+        icon: '💔',
+        description: '1815\'te Waterloo\'da son yenilgimi aldım. Bu savaş, imparatorluğumun sonu oldu ama askeri deham tarihe geçti. Elba Adası\'ndan kaçtıktan sonra "100 Gün" döneminde tekrar iktidara geldim. Waterloo\'da İngiliz ve Prusya ordularına karşı savaştım. Bu savaş, askeri kariyerimin sonu oldu ama stratejik düşüncem ve liderlik yeteneklerim hala dünyada takdir edilmektedir. "İmkansız kelimesi Fransızca\'da yoktur" sözümle tarihe geçtim.'
+      },
+      {
+        id: 'napoleonic_code',
+        title: 'Napolyon Kanunları',
+        icon: '📜',
+        description: 'Napolyon Kanunları\'nı hazırlattım. Bu kanunlar, modern hukuk sisteminin temelini oluşturdu ve dünyada yaygınlaştı. 1804\'te yürürlüğe giren bu kanunlar, eşitlik, özgürlük ve mülkiyet haklarını güvence altına aldı. Napolyon Kanunları, sadece Fransa\'da değil, fethettiğim ülkelerde de uygulandı. Bu kanunlar, modern hukuk sisteminin temelini oluşturdu ve bugün hala birçok ülkede etkisini sürdürmektedir. Hukuki reformlarım, askeri zaferlerim kadar önemlidir.'
+      }
+    ]
+  } as Record<string, Array<{id: string, title: string, icon: string, description: string}>>;
+
+  const speakEvent = (eventId: string) => {
+    const events = historicalEvents[character.id] || [];
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const message = `${event.title}: ${event.description}`;
+    
+    console.log('Tarihi olay anlatılıyor:', message);
+    
     try {
       if ('speechSynthesis' in window) {
-        const utter = new SpeechSynthesisUtterance(greetingMessage);
+        window.speechSynthesis.cancel();
+        
+        const utter = new SpeechSynthesisUtterance(message);
         utter.lang = 'tr-TR';
+        
         try {
           const stored = localStorage.getItem('tts_settings');
           if (stored) {
@@ -59,54 +165,182 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
             utter.rate = s.rate ?? 1;
             utter.pitch = s.pitch ?? 1;
             utter.volume = s.volume ?? 1;
+            
             if (s.voice) {
               const vs = window.speechSynthesis.getVoices();
               const found = vs.find(v => v.name === s.voice);
               if (found) utter.voice = found;
             }
           }
-        } catch {}
+        } catch (e) {
+          console.log('TTS ayarları yüklenemedi:', e);
+        }
+        
         utter.onstart = () => {
+          console.log('Tarihi olay anlatımı başladı');
           setIntroMouthOpen(8);
           setCurrentAnimation('speaking');
-          setCtaVisible(false);
+          setSelectedEvent(eventId);
         };
+        
         utter.onboundary = () => {
           const v = 6 + Math.floor(Math.random() * 10);
           setIntroMouthOpen(v);
         };
+        
         utter.onend = () => {
+          console.log('Tarihi olay anlatımı bitti');
+          setIntroMouthOpen(undefined);
+          setCurrentAnimation('idle');
+          setSelectedEvent(null);
+        };
+        
+        utter.onerror = (event) => {
+          console.error('TTS hatası:', event.error);
+          setCurrentAnimation('idle');
+          setSelectedEvent(null);
+        };
+        
+        utterRef.current = utter;
+        window.speechSynthesis.speak(utter);
+        
+      } else {
+        console.log('Web Speech API desteklenmiyor');
+      }
+    } catch (error) {
+      console.error('Tarihi olay anlatım hatası:', error);
+    }
+  };
+
+  const speakGreeting = () => {
+    if (!greetingMessage) return;
+    
+    console.log('Konuşma başlatılıyor:', greetingMessage);
+    
+    try {
+      if ('speechSynthesis' in window) {
+        // Önceki konuşmaları iptal et
+        window.speechSynthesis.cancel();
+        
+        const utter = new SpeechSynthesisUtterance(greetingMessage);
+        utter.lang = 'tr-TR';
+        
+        // Ses ayarlarını uygula
+        try {
+          const stored = localStorage.getItem('tts_settings');
+          if (stored) {
+            const s = JSON.parse(stored);
+            utter.rate = s.rate ?? 1;
+            utter.pitch = s.pitch ?? 1;
+            utter.volume = s.volume ?? 1;
+            console.log('TTS ayarları uygulandı:', s);
+            
+            if (s.voice) {
+              const vs = window.speechSynthesis.getVoices();
+              const found = vs.find(v => v.name === s.voice);
+              if (found) {
+                utter.voice = found;
+                console.log('Ses seçildi:', found.name);
+              }
+            }
+          }
+        } catch (e) {
+          console.log('TTS ayarları yüklenemedi:', e);
+        }
+        
+        // Event handlers
+        utter.onstart = () => {
+          console.log('Konuşma başladı');
+          setIntroMouthOpen(8);
+          setCurrentAnimation('speaking');
+          setCtaVisible(false);
+        };
+        
+        utter.onboundary = () => {
+          const v = 6 + Math.floor(Math.random() * 10);
+          setIntroMouthOpen(v);
+        };
+        
+        utter.onend = () => {
+          console.log('Konuşma bitti');
           setIntroMouthOpen(undefined);
           setCurrentAnimation('idle');
         };
+        
+        utter.onerror = (event) => {
+          console.error('TTS hatası:', event.error);
+          setCurrentAnimation('idle');
+          setCtaVisible(true);
+        };
+        
         utterRef.current = utter;
+        
+        // Konuşmayı başlat
         window.speechSynthesis.speak(utter);
+        
+        // Konuşma başlamadıysa CTA göster
+        setTimeout(() => {
+          if (!window.speechSynthesis.speaking) {
+            console.log('Konuşma başlamadı, CTA gösteriliyor');
+            setCtaVisible(true);
+          }
+        }, 1000);
+        
+      } else {
+        console.log('Web Speech API desteklenmiyor');
+        setCtaVisible(true);
       }
-    } catch {}
+    } catch (error) {
+      console.error('Konuşma hatası:', error);
+      setCtaVisible(true);
+    }
   };
 
   // Greeting otomatik Web Speech TTS ve basit lip-sync
   useEffect(() => {
     if (!greetingMessage) return;
+    
+    console.log('Greeting mesajı hazır:', greetingMessage);
+    
     // Otomatik başlatmayı dene; eğer tarayıcı engellerse CTA gösterilir
     try {
       if ('speechSynthesis' in window) {
-        // Bazı tarayıcılarda otomatik okuma engellenebilir; kısa gecikme ile dene
-        const id = setTimeout(() => {
-          // Sessizce konuşmayı tetikle
-          speakGreeting();
-          // 2 sn sonra hâlâ konuşma başlamadıysa CTA aç
+        // Seslerin yüklenmesini bekle
+        const checkVoices = () => {
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            console.log('Sesler yüklendi:', voices.length);
+            // Kısa gecikme ile konuşmayı başlat
+            setTimeout(() => {
+              speakGreeting();
+            }, 500);
+          } else {
+            // Sesler henüz yüklenmediyse tekrar dene
+            setTimeout(checkVoices, 100);
+          }
+        };
+        
+        // Seslerin yüklenmesini bekle
+        if (window.speechSynthesis.getVoices().length > 0) {
           setTimeout(() => {
-            const speaking = (window as any).speechSynthesis.speaking;
-            if (!speaking) {
-              setCtaVisible(true);
-              console.log('Ses çalma engellendi, CTA gösteriliyor');
-            }
-          }, 2000);
-        }, 500);
-        return () => clearTimeout(id);
+            speakGreeting();
+          }, 500);
+        } else {
+          window.speechSynthesis.addEventListener('voiceschanged', () => {
+            setTimeout(() => {
+              speakGreeting();
+            }, 500);
+          });
+        }
+        
+      } else {
+        console.log('Web Speech API desteklenmiyor');
+        setCtaVisible(true);
       }
-    } catch {}
+    } catch (error) {
+      console.error('Otomatik konuşma hatası:', error);
+      setCtaVisible(true);
+    }
   }, [greetingMessage]);
 
   useEffect(() => {
@@ -165,51 +399,133 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
           </div>
           
           <div onClick={speakGreeting} className={`${getAvatarSize()} mx-auto shadow-2xl transition-all duration-500 ${getAvatarAnimation()} cursor-pointer relative`}>
-            {/* Real Game-Quality Avatar with CSS Art */}
+            {/* Historical Character Portrait */}
             <div className="relative w-full h-full">
-              {/* Character Portrait Container */}
-              <div className="relative w-full h-full overflow-hidden rounded-full">
-                {/* Background with Character Theme */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100"></div>
-                
-                {/* Character Portrait */}
-                <div className="relative w-full h-full flex items-center justify-center">
-                  {/* Face Base */}
-                  <div className="relative w-32 h-40 bg-gradient-to-b from-yellow-200 to-orange-200 rounded-full shadow-2xl" 
-                       style={{
-                         background: 'linear-gradient(135deg, #F4A460 0%, #DEB887 30%, #CD853F 70%, #8B4513 100%)',
-                         boxShadow: 'inset 0 0 30px rgba(0,0,0,0.1), 0 20px 40px rgba(0,0,0,0.3)',
-                         transform: 'perspective(1000px) rotateX(5deg) rotateY(-5deg)'
-                       }}>
+              {/* Historical Background Scene */}
+              <div className="absolute inset-0 overflow-hidden" style={{
+                background: `linear-gradient(135deg, ${
+                  character.id === 'fatih_sultan_mehmet' ? 
+                    '#8B4513 0%, #D2691E 30%, #CD853F 70%, #F4A460 100%' :
+                  character.id === 'ataturk' ? 
+                    '#2F4F4F 0%, #4682B4 30%, #87CEEB 70%, #F0F8FF 100%' :
+                    '#191970 0%, #4169E1 30%, #87CEEB 70%, #F0F8FF 100%'
+                })`,
+                borderRadius: '20px'
+              }}>
+                {/* Historical Elements */}
+                <div className="absolute inset-0">
+                  {/* Architectural Elements */}
+                  {character.id === 'fatih_sultan_mehmet' && (
+                    <>
+                      {/* Ottoman Architecture */}
+                      <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-amber-800 to-amber-600 opacity-30"></div>
+                      <div className="absolute bottom-4 left-8 w-2 h-8 bg-amber-700 opacity-50"></div>
+                      <div className="absolute bottom-4 right-8 w-2 h-8 bg-amber-700 opacity-50"></div>
+                      <div className="absolute bottom-8 left-1/2 w-12 h-2 bg-amber-700 opacity-50 transform -translate-x-1/2"></div>
+                    </>
+                  )}
+                  
+                  {character.id === 'ataturk' && (
+                    <>
+                      {/* Modern Architecture */}
+                      <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-gray-700 to-gray-500 opacity-30"></div>
+                      <div className="absolute bottom-4 left-8 w-3 h-8 bg-gray-600 opacity-50"></div>
+                      <div className="absolute bottom-4 right-8 w-3 h-8 bg-gray-600 opacity-50"></div>
+                      <div className="absolute bottom-8 left-1/2 w-16 h-2 bg-gray-600 opacity-50 transform -translate-x-1/2"></div>
+                    </>
+                  )}
+                  
+                  {character.id === 'napoleon' && (
+                    <>
+                      {/* European Architecture */}
+                      <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-slate-700 to-slate-500 opacity-30"></div>
+                      <div className="absolute bottom-4 left-8 w-2 h-8 bg-slate-600 opacity-50"></div>
+                      <div className="absolute bottom-4 right-8 w-2 h-8 bg-slate-600 opacity-50"></div>
+                      <div className="absolute bottom-8 left-1/2 w-14 h-2 bg-slate-600 opacity-50 transform -translate-x-1/2"></div>
+                    </>
+                  )}
+                </div>
+
+                {/* Floating Historical Elements */}
+                <div className="absolute inset-0">
+                  {[...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`absolute text-2xl opacity-20 animate-float ${
+                        character.id === 'fatih_sultan_mehmet' ? 'text-yellow-600' :
+                        character.id === 'ataturk' ? 'text-blue-600' : 'text-blue-800'
+                      }`}
+                      style={{
+                        left: `${15 + (i * 15)}%`,
+                        top: `${20 + (i * 10)}%`,
+                        animationDelay: `${i * 0.5}s`,
+                        animationDuration: '3s'
+                      }}
+                    >
+                      {character.id === 'fatih_sultan_mehmet' ? '🏰' :
+                       character.id === 'ataturk' ? '🏛️' : '⚔️'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Character Portrait */}
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative">
+                  {/* Character Head */}
+                  <div className={`relative w-32 h-40 transition-all duration-500 ${
+                    currentAnimation === 'speaking' ? 'scale-105 animate-pulse' : 
+                    currentAnimation === 'listening' ? 'scale-102 animate-pulse' : 'hover:scale-102'
+                  }`} style={{
+                    background: `radial-gradient(ellipse at center, #F4A460 0%, #DEB887 50%, #CD853F 100%)`,
+                    borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                    boxShadow: '0 0 40px rgba(0,0,0,0.4), inset 0 0 30px rgba(255,255,255,0.1)',
+                    transform: 'perspective(1000px) rotateX(5deg) rotateY(-2deg)'
+                  }}>
                     
                     {/* Eyes */}
-                    <div className="absolute top-8 left-8 w-6 h-6 bg-black rounded-full shadow-inner">
-                      <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"></div>
-                      <div className="absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full opacity-90"></div>
+                    <div className="absolute top-12 left-8 w-6 h-6 bg-black rounded-full">
+                      <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full animate-pulse"></div>
+                      <div className="absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full"></div>
                       <div className="absolute top-1 left-1 w-1 h-1 bg-black rounded-full"></div>
+                      {currentAnimation === 'speaking' && (
+                        <div className="absolute -top-1 -left-1 w-8 h-8 border-2 border-green-400 rounded-full animate-ping opacity-40"></div>
+                      )}
                     </div>
-                    <div className="absolute top-8 right-8 w-6 h-6 bg-black rounded-full shadow-inner">
-                      <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"></div>
-                      <div className="absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full opacity-90"></div>
+                    <div className="absolute top-12 right-8 w-6 h-6 bg-black rounded-full">
+                      <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full animate-pulse"></div>
+                      <div className="absolute top-0.5 left-0.5 w-2 h-2 bg-white rounded-full"></div>
                       <div className="absolute top-1 left-1 w-1 h-1 bg-black rounded-full"></div>
+                      {currentAnimation === 'speaking' && (
+                        <div className="absolute -top-1 -left-1 w-8 h-8 border-2 border-green-400 rounded-full animate-ping opacity-40"></div>
+                      )}
                     </div>
 
                     {/* Eyebrows */}
-                    <div className="absolute top-6 left-6 w-8 h-1 bg-black rounded-full transform rotate-12"></div>
-                    <div className="absolute top-6 right-6 w-8 h-1 bg-black rounded-full transform -rotate-12"></div>
+                    <div className={`absolute top-8 left-6 w-8 h-1 bg-black rounded-full transition-all duration-300 ${
+                      currentAnimation === 'speaking' ? 'animate-pulse' : ''
+                    }`} style={{transform: 'rotate(-10deg)'}}></div>
+                    <div className={`absolute top-8 right-6 w-8 h-1 bg-black rounded-full transition-all duration-300 ${
+                      currentAnimation === 'speaking' ? 'animate-pulse' : ''
+                    }`} style={{transform: 'rotate(10deg)'}}></div>
 
                     {/* Nose */}
-                    <div className="absolute top-16 left-1/2 w-2 h-6 bg-gradient-to-b from-yellow-300 to-orange-300 rounded-full transform -translate-x-1/2 shadow-inner"></div>
+                    <div className="absolute top-20 left-1/2 w-2 h-6 bg-gradient-to-b from-yellow-300 to-orange-300 rounded-full transform -translate-x-1/2 shadow-inner"></div>
 
                     {/* Mouth */}
-                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+                    <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2">
                       {currentAnimation === 'speaking' ? (
-                        <div className="w-8 h-4 bg-black rounded-full animate-pulse shadow-inner">
-                          <div className="w-6 h-3 bg-white rounded-full mx-auto mt-0.5"></div>
-                          <div className="w-4 h-2 bg-pink-400 rounded-full mx-auto mt-0.5"></div>
+                        <div className="relative">
+                          <div className="w-8 h-4 bg-black rounded-full animate-pulse shadow-inner">
+                            <div className="w-6 h-3 bg-white rounded-full mx-auto mt-0.5"></div>
+                            <div className="w-4 h-2 bg-pink-400 rounded-full mx-auto mt-0.5"></div>
+                          </div>
+                          {/* Speaking Effects */}
+                          <div className="absolute -top-3 -left-3 w-1 h-1 bg-yellow-300 rounded-full animate-ping"></div>
+                          <div className="absolute -top-3 -right-3 w-1 h-1 bg-yellow-300 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
                         </div>
                       ) : currentAnimation === 'listening' ? (
-                        <div className="w-6 h-2 bg-black rounded-full"></div>
+                        <div className="w-6 h-2 bg-black rounded-full animate-pulse"></div>
                       ) : (
                         <div className="w-8 h-1 bg-black rounded-full"></div>
                       )}
@@ -219,77 +535,124 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
                     {character.id === 'fatih_sultan_mehmet' && (
                       <>
                         {/* Crown */}
-                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                          <div className="w-16 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-t-full shadow-lg"
+                        <div className={`absolute -top-4 left-1/2 transform -translate-x-1/2 ${
+                          currentAnimation === 'speaking' ? 'animate-bounce' : ''
+                        }`}>
+                          <div className="w-16 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 shadow-2xl"
                                style={{
                                  clipPath: 'polygon(20% 100%, 0% 0%, 100% 0%, 80% 100%)',
-                                 boxShadow: '0 5px 15px rgba(255,215,0,0.6)'
+                                 boxShadow: '0 8px 20px rgba(255,215,0,0.8)'
                                }}>
-                            <div className="absolute top-1 left-1/2 w-2 h-2 bg-yellow-700 rounded-full transform -translate-x-1/2"></div>
-                            <div className="absolute top-2 left-2 w-1 h-1 bg-yellow-700 rounded-full"></div>
-                            <div className="absolute top-2 right-2 w-1 h-1 bg-yellow-700 rounded-full"></div>
+                            <div className="absolute top-1 left-1/2 w-2 h-2 bg-yellow-700 rounded-full transform -translate-x-1/2 animate-pulse"></div>
+                            <div className="absolute top-2 left-2 w-1 h-1 bg-yellow-700 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+                            <div className="absolute top-2 right-2 w-1 h-1 bg-yellow-700 rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
                           </div>
                         </div>
                         {/* Beard */}
-                        <div className="absolute bottom-4 left-1/2 w-12 h-6 bg-black rounded-full transform -translate-x-1/2 opacity-80"></div>
+                        <div className="absolute bottom-4 left-1/2 w-12 h-8 bg-black rounded-full transform -translate-x-1/2 opacity-80 shadow-lg"></div>
                         {/* Mustache */}
-                        <div className="absolute bottom-12 left-1/2 w-8 h-2 bg-black rounded-full transform -translate-x-1/2"></div>
+                        <div className="absolute bottom-16 left-1/2 w-10 h-2 bg-black rounded-full transform -translate-x-1/2 shadow-lg"></div>
                       </>
                     )}
 
                     {character.id === 'ataturk' && (
                       <>
                         {/* Hat */}
-                        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                          <div className="w-20 h-6 bg-gradient-to-b from-blue-800 to-blue-900 rounded-full shadow-lg">
-                            <div className="absolute top-1 left-1/2 w-1 h-1 bg-yellow-400 rounded-full transform -translate-x-1/2"></div>
+                        <div className={`absolute -top-2 left-1/2 transform -translate-x-1/2 ${
+                          currentAnimation === 'speaking' ? 'animate-pulse' : ''
+                        }`}>
+                          <div className="w-20 h-6 bg-gradient-to-b from-blue-800 to-blue-900 rounded-full shadow-2xl">
+                            <div className="absolute top-1 left-1/2 w-1 h-1 bg-yellow-400 rounded-full transform -translate-x-1/2 animate-pulse"></div>
                             <div className="absolute top-2 left-1/2 w-16 h-1 bg-yellow-400 rounded-full transform -translate-x-1/2"></div>
                           </div>
                         </div>
                         {/* Mustache */}
-                        <div className="absolute bottom-12 left-1/2 w-8 h-2 bg-black rounded-full transform -translate-x-1/2"></div>
+                        <div className="absolute bottom-16 left-1/2 w-10 h-2 bg-black rounded-full transform -translate-x-1/2 shadow-lg"></div>
                       </>
                     )}
 
                     {character.id === 'napoleon' && (
                       <>
                         {/* Military Hat */}
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                          <div className="w-18 h-5 bg-gradient-to-b from-gray-800 to-black rounded-full shadow-lg">
+                        <div className={`absolute -top-3 left-1/2 transform -translate-x-1/2 ${
+                          currentAnimation === 'speaking' ? 'animate-pulse' : ''
+                        }`}>
+                          <div className="w-18 h-5 bg-gradient-to-b from-gray-800 to-black rounded-full shadow-2xl">
                             <div className="absolute top-0.5 left-1/2 w-12 h-1 bg-yellow-400 rounded-full transform -translate-x-1/2"></div>
                             <div className="absolute top-1 left-1/2 w-2 h-2 bg-yellow-400 rounded-full transform -translate-x-1/2"></div>
                           </div>
                         </div>
                         {/* Military Collar */}
-                        <div className="absolute bottom-16 left-1/2 w-16 h-4 bg-gradient-to-b from-gray-600 to-gray-800 rounded-full transform -translate-x-1/2"></div>
+                        <div className="absolute bottom-20 left-1/2 w-16 h-6 bg-gradient-to-b from-gray-600 to-gray-800 rounded-full transform -translate-x-1/2 shadow-lg"></div>
                       </>
                     )}
                   </div>
+
+                  {/* Character Body */}
+                  <div className="absolute top-32 left-1/2 w-20 h-24 bg-gradient-to-b from-gray-600 to-gray-800 rounded-full transform -translate-x-1/2 shadow-2xl"></div>
                 </div>
-
-                {/* Dynamic Effects */}
-                {currentAnimation === 'speaking' && (
-                  <>
-                    {/* Speaking Glow */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-200/30 to-blue-200/30 rounded-full animate-pulse"></div>
-                    {/* Sound Waves */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-40 h-40 border-4 border-green-400 rounded-full animate-ping opacity-30"></div>
-                      <div className="absolute w-32 h-32 border-4 border-blue-400 rounded-full animate-ping opacity-20" style={{animationDelay: '0.5s'}}></div>
-                      <div className="absolute w-24 h-24 border-4 border-purple-400 rounded-full animate-ping opacity-10" style={{animationDelay: '1s'}}></div>
-                    </div>
-                  </>
-                )}
-
-                {currentAnimation === 'listening' && (
-                  <>
-                    {/* Listening Glow */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-200/30 to-purple-200/30 rounded-full animate-pulse"></div>
-                    {/* Listening Indicator */}
-                    <div className="absolute top-4 right-4 w-4 h-4 bg-blue-500 rounded-full animate-bounce"></div>
-                  </>
-                )}
               </div>
+
+              {/* Historical Effects */}
+              {currentAnimation === 'speaking' && (
+                <>
+                  {/* Sound Waves */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-40 h-40 border-4 border-green-400 rounded-full animate-ping opacity-20"></div>
+                    <div className="absolute w-32 h-32 border-4 border-blue-400 rounded-full animate-ping opacity-15" style={{animationDelay: '0.5s'}}></div>
+                    <div className="absolute w-24 h-24 border-4 border-purple-400 rounded-full animate-ping opacity-10" style={{animationDelay: '1s'}}></div>
+                  </div>
+                  
+                  {/* Historical Speaking Elements */}
+                  <div className="absolute top-4 left-4 text-3xl animate-bounce opacity-60">
+                    {character.id === 'fatih_sultan_mehmet' ? '👑' :
+                     character.id === 'ataturk' ? '🏛️' : '⚔️'}
+                  </div>
+                  <div className="absolute top-4 right-4 text-3xl animate-bounce opacity-60" style={{animationDelay: '0.5s'}}>
+                    {character.id === 'fatih_sultan_mehmet' ? '🏰' :
+                     character.id === 'ataturk' ? '📜' : '🎖️'}
+                  </div>
+                  <div className="absolute bottom-4 left-4 text-3xl animate-bounce opacity-60" style={{animationDelay: '1s'}}>
+                    {character.id === 'fatih_sultan_mehmet' ? '⚔️' :
+                     character.id === 'ataturk' ? '🌟' : '🏆'}
+                  </div>
+                  <div className="absolute bottom-4 right-4 text-3xl animate-bounce opacity-60" style={{animationDelay: '1.5s'}}>
+                    {character.id === 'fatih_sultan_mehmet' ? '📜' :
+                     character.id === 'ataturk' ? '⚖️' : '🗺️'}
+                  </div>
+                </>
+              )}
+
+              {currentAnimation === 'listening' && (
+                <>
+                  {/* Listening Effects */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-200/10 to-purple-200/10 animate-pulse" style={{borderRadius: '20px'}}></div>
+                  <div className="absolute top-4 right-4 w-4 h-4 bg-blue-500 rounded-full animate-bounce opacity-60"></div>
+                  <div className="absolute top-8 right-8 text-2xl animate-bounce opacity-60">👂</div>
+                </>
+              )}
+
+              {/* Idle Historical Effects */}
+              {currentAnimation === 'idle' && (
+                <>
+                  <div className="absolute top-2 left-2 text-2xl animate-pulse opacity-40">
+                    {character.id === 'fatih_sultan_mehmet' ? '👑' :
+                     character.id === 'ataturk' ? '🏛️' : '⚔️'}
+                  </div>
+                  <div className="absolute top-2 right-2 text-2xl animate-pulse opacity-40" style={{animationDelay: '1s'}}>
+                    {character.id === 'fatih_sultan_mehmet' ? '🏰' :
+                     character.id === 'ataturk' ? '📜' : '🎖️'}
+                  </div>
+                  <div className="absolute bottom-2 left-2 text-2xl animate-pulse opacity-40" style={{animationDelay: '2s'}}>
+                    {character.id === 'fatih_sultan_mehmet' ? '⚔️' :
+                     character.id === 'ataturk' ? '🌟' : '🏆'}
+                  </div>
+                  <div className="absolute bottom-2 right-2 text-2xl animate-pulse opacity-40" style={{animationDelay: '3s'}}>
+                    {character.id === 'fatih_sultan_mehmet' ? '📜' :
+                     character.id === 'ataturk' ? '⚖️' : '🗺️'}
+                  </div>
+                </>
+              )}
             </div>
             
             {/* Enhanced Speaking Visualizer with Mimics */}
@@ -340,16 +703,23 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
           
           {/* Enhanced CTA if autoplay blocked */}
           {ctaVisible && (
-            <div className="mt-4 p-4 bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl border-2 border-amber-300">
+            <div className="mt-6 p-6 bg-gradient-to-r from-red-100 to-orange-100 rounded-2xl border-4 border-red-300 shadow-2xl animate-pulse">
               <div className="text-center">
-                <div className="text-lg font-bold text-amber-800 mb-2">🎵 Ses Çalma İzni Gerekli</div>
-                <p className="text-sm text-amber-700 mb-3">Karakterin hikayesini dinlemek için aşağıdaki butona tıklayın</p>
+                <div className="text-2xl font-bold text-red-800 mb-3 flex items-center justify-center">
+                  <span className="mr-2">🔊</span>
+                  Ses Çalma İzni Gerekli
+                  <span className="ml-2">🔊</span>
+                </div>
+                <p className="text-base text-red-700 mb-4 font-medium">Karakterin hikayesini dinlemek için aşağıdaki butona tıklayın</p>
                 <button 
                   onClick={speakGreeting} 
-                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold text-lg shadow-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 border-2 border-amber-400"
+                  className="px-8 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-2xl font-bold text-xl shadow-2xl hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-110 border-4 border-red-400 animate-bounce"
                 >
-                  🔊 Anlatmaya Başla
+                  🎵 Anlatmaya Başla
                 </button>
+                <div className="mt-3 text-sm text-red-600">
+                  💡 İpucu: Tarayıcınızın ses ayarlarını kontrol edin
+                </div>
               </div>
             </div>
           )}
@@ -418,6 +788,42 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
           </div>
         )}
 
+        {/* Tarihi Olaylar Butonları */}
+        <div className="mb-6">
+          <div className="text-center mb-4">
+            <h3 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center">
+              <span className="mr-2">📚</span>
+              Tarihi Olaylarım
+              <span className="ml-2">📚</span>
+            </h3>
+            <p className="text-gray-600 text-sm">Aşağıdaki butonlara tıklayarak önemli olaylarımı detaylı olarak dinleyebilirsiniz</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {historicalEvents[character.id]?.map((event) => (
+              <button
+                key={event.id}
+                onClick={() => speakEvent(event.id)}
+                className={`p-4 rounded-xl font-medium text-left transition-all duration-300 transform hover:scale-105 shadow-lg border-2 ${
+                  selectedEvent === event.id
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400 animate-pulse'
+                    : 'bg-gradient-to-r from-amber-50 to-orange-50 text-gray-700 border-amber-200 hover:from-amber-100 hover:to-orange-100'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{event.icon}</span>
+                  <div>
+                    <div className="font-bold text-sm">{event.title}</div>
+                    <div className="text-xs opacity-80 mt-1 line-clamp-2">
+                      {event.description.substring(0, 80)}...
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Enhanced Action Buttons */}
         <div className="flex space-x-4">
           <button
@@ -425,6 +831,13 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
             className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-xl border-2 border-amber-400"
           >
             💬 Sohbet Etmeye Başla
+          </button>
+          
+          <button
+            onClick={speakGreeting}
+            className="px-6 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-bold text-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105 shadow-xl border-2 border-green-400"
+          >
+            🔊 Hikayeyi Dinle
           </button>
           
           <button

@@ -324,3 +324,4 @@ const HistoricalQuiz: React.FC<HistoricalQuizProps> = ({ character, isVisible, o
 };
 
 export default HistoricalQuiz;
+

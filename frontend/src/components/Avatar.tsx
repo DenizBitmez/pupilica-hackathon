@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HistoricalFigure } from '../types/historical';
 import { SpeakerWaveIcon, EyeIcon, CubeIcon } from '@heroicons/react/24/outline';
 import ThreeDAvatar from './ThreeDAvatar';
@@ -14,6 +14,7 @@ const Avatar: React.FC<AvatarProps> = ({ figure, isConnected, isSpeaking: extern
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentAnimation, setCurrentAnimation] = useState<'idle' | 'speaking' | 'listening'>('idle');
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Avatar animasyonları için basit state yönetimi
   useEffect(() => {
@@ -28,6 +29,15 @@ const Avatar: React.FC<AvatarProps> = ({ figure, isConnected, isSpeaking: extern
     return () => clearInterval(interval);
   }, [externalIsSpeaking, isSpeaking, isConnected]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      try { 
+        window.speechSynthesis.cancel(); 
+      } catch {}
+    };
+  }, []);
+
   const getAvatarEmoji = () => {
     switch (figure.id) {
       case 'fatih_sultan_mehmet':
@@ -38,6 +48,74 @@ const Avatar: React.FC<AvatarProps> = ({ figure, isConnected, isSpeaking: extern
         return '⚔️';
       default:
         return '👤';
+    }
+  };
+
+  const speakGreeting = () => {
+    const greetings = {
+      'fatih_sultan_mehmet': 'Selam! Ben Fatih Sultan Mehmet. Konstantinopolis\'i fetheden büyük fatih. Hayatımın önemli olaylarını dinlemek ister misiniz?',
+      'ataturk': 'Merhaba! Ben Mustafa Kemal Atatürk. Modern Türkiye\'nin kurucusu. Tarihi başarılarımı öğrenmek ister misiniz?',
+      'napoleon': 'Bonjour! Ben Napolyon Bonaparte. Avrupa\'nın fatihi. Askeri zaferlerimi ve stratejilerimi dinlemek ister misiniz?'
+    } as Record<string, string>;
+
+    const message = greetings[figure.id] || 'Merhaba! Benimle sohbet etmek ister misiniz?';
+    
+    console.log('Avatar konuşma başlatılıyor:', message);
+    
+    try {
+      if ('speechSynthesis' in window) {
+        // Önceki konuşmaları iptal et
+        window.speechSynthesis.cancel();
+        
+        const utter = new SpeechSynthesisUtterance(message);
+        utter.lang = 'tr-TR';
+        
+        // Ses ayarlarını uygula
+        try {
+          const stored = localStorage.getItem('tts_settings');
+          if (stored) {
+            const s = JSON.parse(stored);
+            utter.rate = s.rate ?? 1;
+            utter.pitch = s.pitch ?? 1;
+            utter.volume = s.volume ?? 1;
+            
+            if (s.voice) {
+              const vs = window.speechSynthesis.getVoices();
+              const found = vs.find(v => v.name === s.voice);
+              if (found) utter.voice = found;
+            }
+          }
+        } catch (e) {
+          console.log('TTS ayarları yüklenemedi:', e);
+        }
+        
+        // Event handlers
+        utter.onstart = () => {
+          console.log('Avatar konuşma başladı');
+          setIsSpeaking(true);
+          setCurrentAnimation('speaking');
+        };
+        
+        utter.onend = () => {
+          console.log('Avatar konuşma bitti');
+          setIsSpeaking(false);
+          setCurrentAnimation('idle');
+        };
+        
+        utter.onerror = (event) => {
+          console.error('Avatar TTS hatası:', event.error);
+          setIsSpeaking(false);
+          setCurrentAnimation('idle');
+        };
+        
+        utterRef.current = utter;
+        window.speechSynthesis.speak(utter);
+        
+      } else {
+        console.log('Web Speech API desteklenmiyor');
+      }
+    } catch (error) {
+      console.error('Avatar konuşma hatası:', error);
     }
   };
 
@@ -84,185 +162,246 @@ const Avatar: React.FC<AvatarProps> = ({ figure, isConnected, isSpeaking: extern
               currentAnimation === 'speaking' ? 'scale-105' : ''
             }`}
           >
-            {/* Enhanced SVG Avatar System */}
-            <svg 
-              className="w-full h-full" 
-              viewBox="0 0 100 100" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* Gradient Definitions */}
-              <defs>
-                <radialGradient id="fatih_sultan_mehmetGradientSmall" cx="50%" cy="30%" r="70%">
-                  <stop offset="0%" stopColor="#FFD700" />
-                  <stop offset="100%" stopColor="#FF8C00" />
-                </radialGradient>
-                <radialGradient id="ataturkGradientSmall" cx="50%" cy="30%" r="70%">
-                  <stop offset="0%" stopColor="#DC143C" />
-                  <stop offset="100%" stopColor="#8B0000" />
-                </radialGradient>
-                <radialGradient id="napoleonGradientSmall" cx="50%" cy="30%" r="70%">
-                  <stop offset="0%" stopColor="#4169E1" />
-                  <stop offset="100%" stopColor="#000080" />
-                </radialGradient>
-                
-                {/* Shadow effects */}
-                <filter id="shadowSmall" x="-50%" y="-50%" width="200%" height="200%">
-                  <feDropShadow dx="1" dy="1" stdDeviation="1" floodColor="rgba(0,0,0,0.3)"/>
-                </filter>
-              </defs>
-              
-              {/* Background Circle with glow */}
-              <circle 
-                cx="50" 
-                cy="50" 
-                r="45" 
-                fill={`url(#${figure.id}GradientSmall)`}
-                className={`transition-all duration-300 ${currentAnimation === 'speaking' ? 'animate-pulse' : ''}`}
-                filter="url(#shadowSmall)"
-              />
-              
-              {/* Animated background particles */}
+            {/* Historical Character Portrait */}
+            <div className="relative w-full h-full">
+              {/* Historical Background */}
+              <div className="absolute inset-0 overflow-hidden" style={{
+                background: `linear-gradient(135deg, ${
+                  figure.id === 'fatih_sultan_mehmet' ? 
+                    '#8B4513 0%, #D2691E 30%, #CD853F 70%, #F4A460 100%' :
+                  figure.id === 'ataturk' ? 
+                    '#2F4F4F 0%, #4682B4 30%, #87CEEB 70%, #F0F8FF 100%' :
+                    '#191970 0%, #4169E1 30%, #87CEEB 70%, #F0F8FF 100%'
+                })`,
+                borderRadius: '15px'
+              }}>
+                {/* Historical Elements */}
+                <div className="absolute inset-0">
+                  {/* Architectural Elements */}
+                  {figure.id === 'fatih_sultan_mehmet' && (
+                    <>
+                      <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-amber-800 to-amber-600 opacity-30"></div>
+                      <div className="absolute bottom-2 left-4 w-1 h-4 bg-amber-700 opacity-50"></div>
+                      <div className="absolute bottom-2 right-4 w-1 h-4 bg-amber-700 opacity-50"></div>
+                    </>
+                  )}
+                  
+                  {figure.id === 'ataturk' && (
+                    <>
+                      <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-gray-700 to-gray-500 opacity-30"></div>
+                      <div className="absolute bottom-2 left-4 w-1.5 h-4 bg-gray-600 opacity-50"></div>
+                      <div className="absolute bottom-2 right-4 w-1.5 h-4 bg-gray-600 opacity-50"></div>
+                    </>
+                  )}
+                  
+                  {figure.id === 'napoleon' && (
+                    <>
+                      <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-slate-700 to-slate-500 opacity-30"></div>
+                      <div className="absolute bottom-2 left-4 w-1 h-4 bg-slate-600 opacity-50"></div>
+                      <div className="absolute bottom-2 right-4 w-1 h-4 bg-slate-600 opacity-50"></div>
+                    </>
+                  )}
+                </div>
+
+                {/* Floating Historical Elements */}
+                <div className="absolute inset-0">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`absolute text-lg opacity-20 animate-float ${
+                        figure.id === 'fatih_sultan_mehmet' ? 'text-yellow-600' :
+                        figure.id === 'ataturk' ? 'text-blue-600' : 'text-blue-800'
+                      }`}
+                      style={{
+                        left: `${20 + (i * 25)}%`,
+                        top: `${30 + (i * 15)}%`,
+                        animationDelay: `${i * 0.7}s`,
+                        animationDuration: '2.5s'
+                      }}
+                    >
+                      {figure.id === 'fatih_sultan_mehmet' ? '🏰' :
+                       figure.id === 'ataturk' ? '🏛️' : '⚔️'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Character */}
+              <div className="relative w-full h-full flex items-center justify-center">
+                {/* Head */}
+                <div className={`relative w-20 h-24 transition-all duration-500 ${
+                  currentAnimation === 'speaking' ? 'scale-105 animate-pulse' : 
+                  currentAnimation === 'listening' ? 'scale-102 animate-pulse' : 'hover:scale-102'
+                }`} style={{
+                  background: `radial-gradient(ellipse at center, #F4A460 0%, #DEB887 50%, #CD853F 100%)`,
+                  borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                  boxShadow: '0 0 25px rgba(0,0,0,0.4), inset 0 0 20px rgba(255,255,255,0.1)',
+                  transform: 'perspective(1000px) rotateX(5deg) rotateY(-2deg)'
+                }}>
+                  
+                  {/* Eyes */}
+                  <div className="absolute top-8 left-5 w-4 h-4 bg-black rounded-full">
+                    <div className="absolute top-1 left-1 w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-white rounded-full"></div>
+                    <div className="absolute top-1 left-1 w-0.5 h-0.5 bg-black rounded-full"></div>
+                    {currentAnimation === 'speaking' && (
+                      <div className="absolute -top-0.5 -left-0.5 w-5 h-5 border border-green-400 rounded-full animate-ping opacity-40"></div>
+                    )}
+                  </div>
+                  <div className="absolute top-8 right-5 w-4 h-4 bg-black rounded-full">
+                    <div className="absolute top-1 left-1 w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <div className="absolute top-0.5 left-0.5 w-1 h-1 bg-white rounded-full"></div>
+                    <div className="absolute top-1 left-1 w-0.5 h-0.5 bg-black rounded-full"></div>
+                    {currentAnimation === 'speaking' && (
+                      <div className="absolute -top-0.5 -left-0.5 w-5 h-5 border border-green-400 rounded-full animate-ping opacity-40"></div>
+                    )}
+                  </div>
+
+                  {/* Eyebrows */}
+                  <div className={`absolute top-6 left-4 w-5 h-0.5 bg-black rounded-full transition-all duration-300 ${
+                    currentAnimation === 'speaking' ? 'animate-pulse' : ''
+                  }`} style={{transform: 'rotate(-8deg)'}}></div>
+                  <div className={`absolute top-6 right-4 w-5 h-0.5 bg-black rounded-full transition-all duration-300 ${
+                    currentAnimation === 'speaking' ? 'animate-pulse' : ''
+                  }`} style={{transform: 'rotate(8deg)'}}></div>
+
+                  {/* Nose */}
+                  <div className="absolute top-12 left-1/2 w-1 h-3 bg-gradient-to-b from-yellow-300 to-orange-300 rounded-full transform -translate-x-1/2 shadow-inner"></div>
+
+                  {/* Mouth */}
+                  <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+                    {currentAnimation === 'speaking' ? (
+                      <div className="relative">
+                        <div className="w-5 h-2 bg-black rounded-full animate-pulse shadow-inner">
+                          <div className="w-4 h-1 bg-white rounded-full mx-auto mt-0.5"></div>
+                          <div className="w-3 h-0.5 bg-pink-400 rounded-full mx-auto mt-0.5"></div>
+                        </div>
+                        <div className="absolute -top-1 -left-1 w-0.5 h-0.5 bg-yellow-300 rounded-full animate-ping"></div>
+                        <div className="absolute -top-1 -right-1 w-0.5 h-0.5 bg-yellow-300 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
+                      </div>
+                    ) : currentAnimation === 'listening' ? (
+                      <div className="w-4 h-1 bg-black rounded-full animate-pulse"></div>
+                    ) : (
+                      <div className="w-5 h-0.5 bg-black rounded-full"></div>
+                    )}
+                  </div>
+
+                  {/* Character Accessories */}
+                  {figure.id === 'fatih_sultan_mehmet' && (
+                    <>
+                      {/* Crown */}
+                      <div className={`absolute -top-2 left-1/2 transform -translate-x-1/2 ${
+                        currentAnimation === 'speaking' ? 'animate-bounce' : ''
+                      }`}>
+                        <div className="w-10 h-5 bg-gradient-to-b from-yellow-400 to-yellow-600 shadow-lg"
+                             style={{
+                               clipPath: 'polygon(20% 100%, 0% 0%, 100% 0%, 80% 100%)',
+                               boxShadow: '0 5px 15px rgba(255,215,0,0.8)'
+                             }}>
+                          <div className="absolute top-0.5 left-1/2 w-1 h-1 bg-yellow-700 rounded-full transform -translate-x-1/2 animate-pulse"></div>
+                        </div>
+                      </div>
+                      {/* Beard */}
+                      <div className="absolute bottom-2 left-1/2 w-8 h-4 bg-black rounded-full transform -translate-x-1/2 opacity-80 shadow-lg"></div>
+                      {/* Mustache */}
+                      <div className="absolute bottom-10 left-1/2 w-6 h-1 bg-black rounded-full transform -translate-x-1/2 shadow-lg"></div>
+                    </>
+                  )}
+
+                  {figure.id === 'ataturk' && (
+                    <>
+                      {/* Hat */}
+                      <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 ${
+                        currentAnimation === 'speaking' ? 'animate-pulse' : ''
+                      }`}>
+                        <div className="w-12 h-4 bg-gradient-to-b from-blue-800 to-blue-900 rounded-full shadow-lg">
+                          <div className="absolute top-0.5 left-1/2 w-10 h-0.5 bg-yellow-400 rounded-full transform -translate-x-1/2"></div>
+                        </div>
+                      </div>
+                      {/* Mustache */}
+                      <div className="absolute bottom-10 left-1/2 w-6 h-1 bg-black rounded-full transform -translate-x-1/2 shadow-lg"></div>
+                    </>
+                  )}
+
+                  {figure.id === 'napoleon' && (
+                    <>
+                      {/* Military Hat */}
+                      <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 ${
+                        currentAnimation === 'speaking' ? 'animate-pulse' : ''
+                      }`}>
+                        <div className="w-11 h-3 bg-gradient-to-b from-gray-800 to-black rounded-full shadow-lg">
+                          <div className="absolute top-0.5 left-1/2 w-8 h-0.5 bg-yellow-400 rounded-full transform -translate-x-1/2"></div>
+                        </div>
+                      </div>
+                      {/* Military Collar */}
+                      <div className="absolute bottom-12 left-1/2 w-10 h-3 bg-gradient-to-b from-gray-600 to-gray-800 rounded-full transform -translate-x-1/2 shadow-lg"></div>
+                    </>
+                  )}
+                </div>
+
+                {/* Body */}
+                <div className="absolute top-20 left-1/2 w-12 h-16 bg-gradient-to-b from-gray-600 to-gray-800 rounded-full transform -translate-x-1/2 shadow-lg"></div>
+              </div>
+
+              {/* Historical Effects */}
               {currentAnimation === 'speaking' && (
                 <>
-                  <circle cx="25" cy="25" r="1" fill="white" opacity="0.8" className="animate-ping" />
-                  <circle cx="75" cy="25" r="1" fill="white" opacity="0.8" className="animate-ping" style={{animationDelay: '0.5s'}} />
-                  <circle cx="25" cy="75" r="1" fill="white" opacity="0.8" className="animate-ping" style={{animationDelay: '1s'}} />
-                  <circle cx="75" cy="75" r="1" fill="white" opacity="0.8" className="animate-ping" style={{animationDelay: '1.5s'}} />
+                  {/* Sound Waves */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-24 h-24 border-2 border-green-400 rounded-full animate-ping opacity-20"></div>
+                    <div className="absolute w-20 h-20 border-2 border-blue-400 rounded-full animate-ping opacity-15" style={{animationDelay: '0.5s'}}></div>
+                  </div>
+                  
+                  {/* Historical Speaking Elements */}
+                  <div className="absolute top-2 left-2 text-xl animate-bounce opacity-60">
+                    {figure.id === 'fatih_sultan_mehmet' ? '👑' :
+                     figure.id === 'ataturk' ? '🏛️' : '⚔️'}
+                  </div>
+                  <div className="absolute top-2 right-2 text-xl animate-bounce opacity-60" style={{animationDelay: '0.5s'}}>
+                    {figure.id === 'fatih_sultan_mehmet' ? '🏰' :
+                     figure.id === 'ataturk' ? '📜' : '🎖️'}
+                  </div>
+                  <div className="absolute bottom-2 left-2 text-xl animate-bounce opacity-60" style={{animationDelay: '1s'}}>
+                    {figure.id === 'fatih_sultan_mehmet' ? '⚔️' :
+                     figure.id === 'ataturk' ? '🌟' : '🏆'}
+                  </div>
+                  <div className="absolute bottom-2 right-2 text-xl animate-bounce opacity-60" style={{animationDelay: '1.5s'}}>
+                    {figure.id === 'fatih_sultan_mehmet' ? '📜' :
+                     figure.id === 'ataturk' ? '⚖️' : '🗺️'}
+                  </div>
                 </>
               )}
-              
-              {/* Face with dynamic expressions */}
-              <ellipse 
-                cx="50" 
-                cy="60" 
-                rx="25" 
-                ry="30" 
-                fill="#F4A460" 
-                filter="url(#shadowSmall)"
-                className={`transition-all duration-300 ${currentAnimation === 'speaking' ? 'scale-105' : ''}`}
-              />
-              
-              {/* Dynamic Eyes with blinking */}
-              <g className={currentAnimation === 'speaking' ? 'animate-pulse' : ''}>
-                {/* Left Eye */}
-                <circle cx="40" cy="50" r="4" fill="black" />
-                <circle cx="41" cy="49" r="1.5" fill="white" className="animate-pulse" />
-                <circle cx="40.5" cy="48.5" r="0.5" fill="white" opacity="0.8" />
-                
-                {/* Right Eye */}
-                <circle cx="60" cy="50" r="4" fill="black" />
-                <circle cx="61" cy="49" r="1.5" fill="white" className="animate-pulse" />
-                <circle cx="60.5" cy="48.5" r="0.5" fill="white" opacity="0.8" />
-              </g>
-              
-              {/* Animated Eyebrows */}
-              <g className={currentAnimation === 'speaking' ? 'animate-pulse' : ''}>
-                <path d="M 35 42 Q 40 40 45 42" stroke="black" strokeWidth="2" fill="none" filter="url(#shadowSmall)" />
-                <path d="M 55 42 Q 60 40 65 42" stroke="black" strokeWidth="2" fill="none" filter="url(#shadowSmall)" />
-              </g>
-              
-              {/* Nose with subtle animation */}
-              <ellipse 
-                cx="50" 
-                cy="57" 
-                rx="2" 
-                ry="4" 
-                fill="#DEB887" 
-                className={currentAnimation === 'speaking' ? 'animate-pulse' : ''}
-              />
-              
-              {/* Dynamic Mouth with multiple expressions */}
-              {currentAnimation === 'speaking' ? (
-                <g className="animate-pulse">
-                  {/* Open mouth */}
-                  <ellipse cx="50" cy="70" rx="7" ry="4" fill="black" />
-                  {/* Teeth */}
-                  <ellipse cx="50" cy="70" rx="6" ry="3" fill="white" />
-                  {/* Tongue */}
-                  <ellipse cx="50" cy="71.5" rx="4" ry="2" fill="#FF69B4" />
-                  {/* Mouth corners */}
-                  <circle cx="43" cy="70" r="1" fill="black" />
-                  <circle cx="57" cy="70" r="1" fill="black" />
-                </g>
-              ) : currentAnimation === 'listening' ? (
-                <g>
-                  {/* Listening expression - slightly open */}
-                  <ellipse cx="50" cy="70" rx="6" ry="2" fill="black" />
-                  <path d="M 44 70 Q 50 72 56 70" stroke="black" strokeWidth="1" fill="none" />
-                </g>
-              ) : (
-                <g>
-                  {/* Normal smile */}
-                  <path d="M 42 70 Q 50 75 58 70" stroke="black" strokeWidth="2" fill="none" filter="url(#shadowSmall)" />
-                  {/* Smile lines */}
-                  <path d="M 37 65 Q 40 67 43 65" stroke="black" strokeWidth="0.5" fill="none" opacity="0.5" />
-                  <path d="M 57 65 Q 60 67 63 65" stroke="black" strokeWidth="0.5" fill="none" opacity="0.5" />
-                </g>
+
+              {currentAnimation === 'listening' && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-200/10 to-purple-200/10 animate-pulse" style={{borderRadius: '15px'}}></div>
+                  <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full animate-bounce opacity-60"></div>
+                  <div className="absolute top-4 right-4 text-lg animate-bounce opacity-60">👂</div>
+                </>
               )}
-              
-              {/* Enhanced Character-specific accessories */}
-              {figure.id === 'fatih_sultan_mehmet' && (
-                <g className={currentAnimation === 'speaking' ? 'animate-bounce' : ''}>
-                  {/* Crown with jewels */}
-                  <polygon points="35,30 50,20 65,30 62,25 50,17 38,25" fill="#FFD700" stroke="#FF8C00" strokeWidth="1" filter="url(#shadowSmall)" />
-                  <circle cx="50" cy="17" r="1.5" fill="#FF8C00" className="animate-pulse" />
-                  <circle cx="42" cy="22" r="1" fill="#FF8C00" className="animate-pulse" style={{animationDelay: '0.3s'}} />
-                  <circle cx="58" cy="22" r="1" fill="#FF8C00" className="animate-pulse" style={{animationDelay: '0.6s'}} />
-                </g>
+
+              {/* Idle Historical Effects */}
+              {currentAnimation === 'idle' && (
+                <>
+                  <div className="absolute top-1 left-1 text-lg animate-pulse opacity-40">
+                    {figure.id === 'fatih_sultan_mehmet' ? '👑' :
+                     figure.id === 'ataturk' ? '🏛️' : '⚔️'}
+                  </div>
+                  <div className="absolute top-1 right-1 text-lg animate-pulse opacity-40" style={{animationDelay: '1s'}}>
+                    {figure.id === 'fatih_sultan_mehmet' ? '🏰' :
+                     figure.id === 'ataturk' ? '📜' : '🎖️'}
+                  </div>
+                  <div className="absolute bottom-1 left-1 text-lg animate-pulse opacity-40" style={{animationDelay: '2s'}}>
+                    {figure.id === 'fatih_sultan_mehmet' ? '⚔️' :
+                     figure.id === 'ataturk' ? '🌟' : '🏆'}
+                  </div>
+                  <div className="absolute bottom-1 right-1 text-lg animate-pulse opacity-40" style={{animationDelay: '3s'}}>
+                    {figure.id === 'fatih_sultan_mehmet' ? '📜' :
+                     figure.id === 'ataturk' ? '⚖️' : '🗺️'}
+                  </div>
+                </>
               )}
-              
-              {figure.id === 'ataturk' && (
-                <g className={currentAnimation === 'speaking' ? 'animate-pulse' : ''}>
-                  {/* Hat with details */}
-                  <ellipse cx="50" cy="35" rx="25" ry="8" fill="#000080" filter="url(#shadowSmall)" />
-                  <rect x="40" y="35" width="20" height="10" fill="#000080" />
-                  {/* Hat band */}
-                  <rect x="42" y="37" width="16" height="1.5" fill="#FFD700" />
-                  {/* Hat badge */}
-                  <circle cx="50" cy="38" r="1" fill="#FFD700" className="animate-pulse" />
-                </g>
-              )}
-              
-              {figure.id === 'napoleon' && (
-                <g className={currentAnimation === 'speaking' ? 'animate-pulse' : ''}>
-                  {/* Military hat with details */}
-                  <ellipse cx="50" cy="32" rx="22" ry="6" fill="#000000" filter="url(#shadowSmall)" />
-                  <rect x="42" y="32" width="16" height="8" fill="#000000" />
-                  {/* Hat decoration */}
-                  <rect x="47" y="30" width="6" height="2" fill="#FFD700" />
-                  {/* Military insignia */}
-                  <polygon points="50,29 51,30 50,31 49,30" fill="#FFD700" className="animate-pulse" />
-                  {/* Hat plume */}
-                  <path d="M 50 25 Q 52 23 50 21 Q 48 23 50 25" fill="#FFD700" opacity="0.7" className="animate-pulse" />
-                </g>
-              )}
-              
-              {/* Facial hair for character distinction */}
-              {figure.id === 'fatih_sultan_mehmet' && (
-                <g className={currentAnimation === 'speaking' ? 'animate-pulse' : ''}>
-                  {/* Mustache */}
-                  <path d="M 45 62 Q 50 64 55 62" stroke="black" strokeWidth="1" fill="none" />
-                  {/* Beard */}
-                  <path d="M 42 75 Q 50 78 58 75" stroke="black" strokeWidth="1.5" fill="none" />
-                </g>
-              )}
-              
-              {figure.id === 'ataturk' && (
-                <g className={currentAnimation === 'speaking' ? 'animate-pulse' : ''}>
-                  {/* Mustache */}
-                  <path d="M 45 62 Q 50 64 55 62" stroke="black" strokeWidth="1" fill="none" />
-                </g>
-              )}
-              
-              {/* Dynamic facial expressions based on mood */}
-              {currentAnimation === 'speaking' && (
-                <g className="animate-pulse">
-                  {/* Speaking lines */}
-                  <path d="M 30 55 Q 32 57 34 55" stroke="black" strokeWidth="0.5" fill="none" opacity="0.3" />
-                  <path d="M 66 55 Q 68 57 70 55" stroke="black" strokeWidth="0.5" fill="none" opacity="0.3" />
-                </g>
-              )}
-            </svg>
+            </div>
             {/* Enhanced speaking visualizer with facial expressions */}
             {currentAnimation === 'speaking' && (
               <>
@@ -337,10 +476,10 @@ const Avatar: React.FC<AvatarProps> = ({ figure, isConnected, isSpeaking: extern
       {/* Action Buttons */}
       <div className="mt-4 flex justify-center space-x-2">
         <button
-          onClick={() => setIsSpeaking(!isSpeaking)}
+          onClick={speakGreeting}
           className={`p-2 rounded-full transition-colors ${
             isSpeaking
-              ? 'bg-amber-500 text-white'
+              ? 'bg-amber-500 text-white animate-pulse'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
           title="Konuşma simülasyonu"

@@ -333,3 +333,4 @@ const HistoricalTimeline: React.FC<HistoricalTimelineProps> = ({ character, isVi
 };
 
 export default HistoricalTimeline;
+
