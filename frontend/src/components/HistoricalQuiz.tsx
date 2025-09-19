@@ -84,6 +84,106 @@ const HistoricalQuiz: React.FC<HistoricalQuizProps> = ({ character, isVisible, o
         ? 'Atatürk\'ün en ünlü sözü "Hayatta en hakiki mürşit ilimdir"dir.'
         : 'Rusya Seferi, Napolyon\'un en büyük hatası olarak kabul edilir.',
       difficulty: 'hard'
+    },
+    {
+      id: '4',
+      question: character.id === 'fatih_sultan_mehmet'
+        ? 'Şahi topu hangi topçu ustası tarafından dökülmüştür?'
+        : character.id === 'ataturk'
+        ? 'Sakarya Meydan Muharebesi hangi tarihte gerçekleşti?'
+        : 'Napolyon hangi savaşta "Güneşin Savaşı" olarak bilinir?',
+      options: character.id === 'fatih_sultan_mehmet'
+        ? ['Urban', 'Mimar Sinan', 'Kemal Reis', 'Barbaros Hayrettin']
+        : character.id === 'ataturk'
+        ? ['23 Ağustos - 13 Eylül 1921', '19 Mayıs 1919', '30 Ağustos 1922', '29 Ekim 1923']
+        : ['Austerlitz', 'Jena', 'Marengo', 'Friedland'],
+      correctAnswer: 0,
+      explanation: character.id === 'fatih_sultan_mehmet'
+        ? 'Şahi topu Macar topçu ustası Urban tarafından dökülmüştür.'
+        : character.id === 'ataturk'
+        ? 'Sakarya Meydan Muharebesi 23 Ağustos - 13 Eylül 1921 tarihleri arasında gerçekleşmiştir.'
+        : 'Austerlitz Savaşı "Güneşin Savaşı" olarak bilinir.',
+      difficulty: 'medium'
+    },
+    {
+      id: '5',
+      question: character.id === 'fatih_sultan_mehmet'
+        ? 'Fatih Sultan Mehmet kaç gemi karadan yürütmüştür?'
+        : character.id === 'ataturk'
+        ? 'Cumhuriyet hangi tarihte ilan edilmiştir?'
+        : 'Napolyon Code\'u hangi yılda hazırlanmıştır?',
+      options: character.id === 'fatih_sultan_mehmet'
+        ? ['50', '60', '70', '80']
+        : character.id === 'ataturk'
+        ? ['29 Ekim 1923', '23 Nisan 1920', '30 Ağustos 1922', '19 Mayıs 1919']
+        : ['1802', '1803', '1804', '1805'],
+      correctAnswer: 2,
+      explanation: character.id === 'fatih_sultan_mehmet'
+        ? 'Fatih Sultan Mehmet 70 gemiyi karadan yürütmüştür.'
+        : character.id === 'ataturk'
+        ? 'Cumhuriyet 29 Ekim 1923 tarihinde ilan edilmiştir.'
+        : 'Napolyon Code\'u 1804 yılında hazırlanmıştır.',
+      difficulty: 'medium'
+    },
+    {
+      id: '6',
+      question: character.id === 'fatih_sultan_mehmet'
+        ? 'Topkapı Sarayı\'nın inşaatı hangi yıllar arasında gerçekleşmiştir?'
+        : character.id === 'ataturk'
+        ? 'Harf devrimi hangi yılda gerçekleşmiştir?'
+        : 'Napolyon hangi adaya sürgün edilmiştir?',
+      options: character.id === 'fatih_sultan_mehmet'
+        ? ['1460-1478', '1453-1465', '1470-1485', '1465-1480']
+        : character.id === 'ataturk'
+        ? ['1928', '1927', '1929', '1930']
+        : ['Elba', 'Santorini', 'Malta', 'Korsika'],
+      correctAnswer: 0,
+      explanation: character.id === 'fatih_sultan_mehmet'
+        ? 'Topkapı Sarayı\'nın inşaatı 1460-1478 yılları arasında gerçekleşmiştir.'
+        : character.id === 'ataturk'
+        ? 'Harf devrimi 1928 yılında gerçekleşmiştir.'
+        : 'Napolyon Elba Adası\'na sürgün edilmiştir.',
+      difficulty: 'hard'
+    },
+    {
+      id: '7',
+      question: character.id === 'fatih_sultan_mehmet'
+        ? 'Fatih Sultan Mehmet\'in babası kimdir?'
+        : character.id === 'ataturk'
+        ? 'Kadınlara seçme ve seçilme hakkı hangi yılda verilmiştir?'
+        : 'Napolyon\'un Grande Armée\'si kaç askerden oluşuyordu?',
+      options: character.id === 'fatih_sultan_mehmet'
+        ? ['II. Murad', 'I. Mehmed', 'I. Bayezid', 'Orhan Gazi']
+        : character.id === 'ataturk'
+        ? ['1934', '1933', '1935', '1936']
+        : ['500.000', '600.000', '700.000', '800.000'],
+      correctAnswer: 0,
+      explanation: character.id === 'fatih_sultan_mehmet'
+        ? 'Fatih Sultan Mehmet\'in babası II. Murad\'dır.'
+        : character.id === 'ataturk'
+        ? 'Kadınlara seçme ve seçilme hakkı 1934 yılında verilmiştir.'
+        : 'Napolyon\'un Grande Armée\'si 600.000 askerden oluşuyordu.',
+      difficulty: 'medium'
+    },
+    {
+      id: '8',
+      question: character.id === 'fatih_sultan_mehmet'
+        ? 'Fatih Sultan Mehmet hangi şehirde doğmuştur?'
+        : character.id === 'ataturk'
+        ? 'Atatürk\'ün annesinin adı nedir?'
+        : 'Napolyon hangi ülkede doğmuştur?',
+      options: character.id === 'fatih_sultan_mehmet'
+        ? ['Edirne', 'Bursa', 'İstanbul', 'Sivas']
+        : character.id === 'ataturk'
+        ? ['Zübeyde Hanım', 'Fatma Hanım', 'Ayşe Hanım', 'Hatice Hanım']
+        : ['Fransa', 'İtalya', 'İspanya', 'Portekiz'],
+      correctAnswer: 0,
+      explanation: character.id === 'fatih_sultan_mehmet'
+        ? 'Fatih Sultan Mehmet Edirne\'de doğmuştur.'
+        : character.id === 'ataturk'
+        ? 'Atatürk\'ün annesinin adı Zübeyde Hanım\'dır.'
+        : 'Napolyon Fransa\'da doğmuştur.',
+      difficulty: 'easy'
     }
   ];
 
@@ -324,4 +424,7 @@ const HistoricalQuiz: React.FC<HistoricalQuizProps> = ({ character, isVisible, o
 };
 
 export default HistoricalQuiz;
+
+
+
 

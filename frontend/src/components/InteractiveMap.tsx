@@ -6,11 +6,15 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 // Leaflet icon fix
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
 });
 
 interface InteractiveMapProps {
@@ -313,7 +317,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({ selectedFigure }) => {
           <MapContainer
             ref={mapRef}
             center={[39.9334, 32.8597]} // Ankara merkez
-            zoom={6}
+            zoom={4}
             style={{ height: '100%', width: '100%' }}
             className="rounded-b-xl"
           >

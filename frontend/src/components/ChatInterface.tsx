@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { HistoricalFigure, ChatMessage } from '../types/historical';
-import { PaperAirplaneIcon, MicrophoneIcon, AcademicCapIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, MicrophoneIcon } from '@heroicons/react/24/outline';
 import AchievementSystem from './AchievementSystem';
-import HistoricalQuiz from './HistoricalQuiz';
-import HistoricalTimeline from './HistoricalTimeline';
-import Avatar from './Avatar';
 
 interface ChatInterfaceProps {
   figure: HistoricalFigure;
@@ -30,10 +27,44 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(false);
+  const [showExamplePrompts, setShowExamplePrompts] = useState(true);
+  const [isAchievementCollapsed, setIsAchievementCollapsed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Karaktere göre örnek promptlar
+  const getExamplePrompts = () => {
+    const promptsMap: Record<string, string[]> = {
+      'fatih_sultan_mehmet': [
+        "İstanbul'un fethi hakkında detaylı bilgi ver. Kuşatma stratejilerimi, kullandığım teknolojileri ve bu fethin tarihsel önemini anlat.",
+        "Şahi toplarının yapım sürecini, teknik özelliklerini ve kuşatmada nasıl kullandığımı detaylı anlat.",
+        "Gemileri karadan yürütme operasyonunu nasıl planladım ve gerçekleştirdim? Bu stratejinin kuşatmaya etkisini anlat.",
+        "İstanbul'u nasıl bir bilim ve sanat merkezi haline getirdim? Hangi bilim insanlarını korudum ve nasıl destekledim?",
+        "Kanunname-i Âl-i Osman'ın içeriğini ve Osmanlı hukuk sistemine katkılarını detaylı anlat."
+      ],
+      'ataturk': [
+        "Kurtuluş Savaşı'nı nasıl başlattım? Samsun'a çıkışımın önemi ve sonrasında yaptığım çalışmaları detaylı anlat.",
+        "Sakarya Meydan Muharebesi'nin stratejisini, önemini ve sonuçlarını detaylı anlat.",
+        "Cumhuriyet'in ilan sürecini, nedenlerini ve Türkiye'ye getirdiği değişiklikleri anlat.",
+        "Harf devriminin nedenlerini, sürecini ve Türk eğitimine etkilerini detaylı anlat.",
+        "Kadın hakları konusundaki reformlarımı ve bu hakların Türk toplumuna etkilerini anlat."
+      ],
+      'napoleon': [
+        "Austerlitz Savaşı'nın stratejisini, taktiklerimi ve bu zaferin askeri tarihteki önemini detaylı anlat.",
+        "Napoleon Kanunları'nın içeriğini, özelliklerini ve dünya hukuk sistemine etkilerini anlat.",
+        "İtalya Seferi'ndeki stratejilerimi, zaferlerimi ve bu seferin kariyerime etkilerini anlat.",
+        "Mısır Seferi'nin amaçlarını, bilimsel keşiflerini ve tarihsel önemini anlat.",
+        "Waterloo Savaşı'nın nedenlerini, sürecini ve bu yenilginin sonuçlarını anlat."
+      ]
+    };
+    
+    return promptsMap[figure.id] || [
+      "Bana hayatınız hakkında bilgi verir misiniz?",
+      "En önemli başarınız nedir?",
+      "Zamanınızda yaşam nasıldı?",
+      "Bana bir hikaye anlatır mısınız?"
+    ];
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,6 +73,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // localStorage'dan prompt'u al ve textbox'a yerleştir
+  useEffect(() => {
+    const chatPrompt = localStorage.getItem('chat_prompt');
+    const chatTopic = localStorage.getItem('chat_topic');
+    
+    console.log('ChatInterface useEffect - chatPrompt:', chatPrompt);
+    console.log('ChatInterface useEffect - chatTopic:', chatTopic);
+    
+    if (chatPrompt && chatTopic && messages.length === 0) {
+      console.log('Prompt textbox\'a yerleştiriliyor:', chatTopic);
+      console.log('Prompt içeriği:', chatPrompt);
+      
+      // Prompt'u textbox'a yerleştir
+      setInputMessage(chatPrompt);
+      
+      // Prompt'u temizle
+      localStorage.removeItem('chat_prompt');
+      localStorage.removeItem('chat_topic');
+    }
+  }, []);
 
   useEffect(() => {
     if (socket) {
@@ -187,25 +239,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
   }, [socket]);
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+  const handleSendMessage = async (messageText?: string) => {
+    const messageToSend = messageText || inputMessage;
+    if (!messageToSend.trim() || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      text: inputMessage,
+      text: messageToSend,
       isUser: true,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
     setMessageCount(prev => prev + 1);
-    setInputMessage('');
+    if (!messageText) setInputMessage(''); // Sadece manuel gönderimde input'u temizle
     setIsLoading(true);
 
     if (socket && isConnected) {
       socket.emit('chat_message', {
         figure_id: figure.id,
-        message: inputMessage
+        message: messageToSend
       });
     } else {
       // Fallback: HTTP API kullan
@@ -217,7 +270,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           },
           body: JSON.stringify({
             figure_id: figure.id,
-            message: inputMessage
+            message: messageToSend
           })
         });
 
@@ -250,6 +303,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const useExamplePrompt = (prompt: string) => {
+    setInputMessage(prompt);
+    setShowExamplePrompts(false);
+    // Input alanına odaklan
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea');
+      if (textarea) {
+        textarea.focus();
+      }
+    }, 100);
   };
 
   const startListening = () => {
@@ -426,6 +491,40 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Örnek Promptlar */}
+      {showExamplePrompts && messages.length === 0 && (
+        <div className="p-4 border-t border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="mb-3">
+            <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              💡 Örnek Sorular
+              <button
+                onClick={() => setShowExamplePrompts(false)}
+                className="ml-2 text-gray-400 hover:text-gray-600 text-xs"
+              >
+                ✕
+              </button>
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {getExamplePrompts().slice(0, 4).map((prompt, index) => (
+              <button
+                key={index}
+                onClick={() => useExamplePrompt(prompt)}
+                className="text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm text-gray-700 hover:text-gray-900"
+              >
+                <span className="block overflow-hidden" style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  lineHeight: '1.4',
+                  maxHeight: '2.8em'
+                }}>{prompt}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex space-x-2">
@@ -455,7 +554,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </button>
           
           <button
-            onClick={handleSendMessage}
+            onClick={() => handleSendMessage()}
             disabled={!inputMessage.trim() || isLoading}
             className="p-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             title="Gönder"
@@ -465,51 +564,46 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </div>
 
-      {/* Educational Features */}
-      <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">🎓 Eğitim Araçları</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setShowQuiz(true)}
-            className="flex items-center space-x-2 p-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
-          >
-            <AcademicCapIcon className="h-5 w-5" />
-            <span className="font-medium">🧠 Quiz</span>
-          </button>
-          <button
-            onClick={() => setShowTimeline(true)}
-            className="flex items-center space-x-2 p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
-          >
-            <ClockIcon className="h-5 w-5" />
-            <span className="font-medium">📅 Zaman Çizelgesi</span>
-          </button>
-        </div>
-      </div>
 
       {/* Achievement System */}
-      <AchievementSystem 
-        character={figure} 
-        messageCount={messageCount} 
-        isVisible={true} 
-      />
-
-      {/* Quiz Modal */}
-      {showQuiz && (
-        <HistoricalQuiz 
-          character={figure} 
-          isVisible={showQuiz} 
-          onClose={() => setShowQuiz(false)} 
-        />
+      {!isAchievementCollapsed && (
+        <div className="relative">
+          <button
+            onClick={() => setIsAchievementCollapsed(true)}
+            className="absolute top-2 right-2 z-10 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            title="Başarıları küçült"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <AchievementSystem 
+            character={figure} 
+            messageCount={messageCount} 
+            isVisible={true} 
+          />
+        </div>
+      )}
+      
+      {isAchievementCollapsed && (
+        <div className="bg-white rounded-xl shadow-lg p-3 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <span className="text-yellow-600 text-sm">🏆</span>
+              </div>
+              <span className="text-sm font-medium text-gray-700">Başarılar ({messageCount} mesaj)</span>
+            </div>
+            <button
+              onClick={() => setIsAchievementCollapsed(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors text-sm"
+            >
+              Genişlet
+            </button>
+          </div>
+        </div>
       )}
 
-      {/* Timeline Modal */}
-      {showTimeline && (
-        <HistoricalTimeline 
-          character={figure} 
-          isVisible={showTimeline} 
-          onClose={() => setShowTimeline(false)} 
-        />
-      )}
     </div>
   );
 };

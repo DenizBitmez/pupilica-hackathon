@@ -8,6 +8,9 @@ export interface HistoricalFigure {
   description?: string;
   avatar?: string;
   color?: string;
+  achievements?: string[];
+  speechPattern?: string;
+  historicalContext?: string;
 }
 
 export interface ChatMessage {
