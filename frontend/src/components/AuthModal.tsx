@@ -114,18 +114,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isVisible, onClose, onSuccess }) 
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <AcademicCapIcon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">
+              <h2 className="text-lg font-bold text-gray-800">
                 {isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
               </h2>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 text-xs">
                 Gelişmiş özelliklere erişim için
               </p>
             </div>
@@ -136,7 +136,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isVisible, onClose, onSuccess }) 
         </div>
 
         {/* Demo Accounts */}
-        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Demo Hesaplar</h3>
           <div className="space-y-2">
             {demoAccounts.map((account, index) => (
@@ -160,7 +160,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isVisible, onClose, onSuccess }) 
         </div>
 
         {/* Form */}
-        <div className="p-6">
+        <div className="p-4">
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-700 text-sm">{error}</p>
@@ -345,7 +345,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isVisible, onClose, onSuccess }) 
         </div>
 
         {/* Benefits */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Giriş Yapınca Neler Kazanırsınız?</h3>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">

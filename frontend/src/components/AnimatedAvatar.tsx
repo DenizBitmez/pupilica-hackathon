@@ -601,7 +601,7 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
           <div className="space-y-6">
             {/* Character Avatar */}
             <div className="text-center">
-              <div onClick={speakGreeting} className="w-48 h-48 mx-auto shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer relative group">
+              <div onClick={speakGreeting} className="w-56 h-56 mx-auto shadow-2xl transition-all duration-500 hover:scale-105 cursor-pointer relative group">
                 {/* Character Photo */}
                 <div className="relative w-full h-full rounded-full overflow-hidden">
                   <img 
@@ -783,19 +783,19 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
               </div>
             </div>
 
-        {/* Character Info */}
-            <div className="mt-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">{character.name}</h2>
-              <div className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-3">
+            {/* Character Info */}
+            <div className="text-center space-y-4">
+              <h2 className="text-3xl font-bold text-gray-800">{character.name}</h2>
+              <div className="inline-block bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 px-4 py-2 rounded-full text-sm font-medium shadow-md">
                 {character.id === 'fatih_sultan_mehmet' ? 'İstanbul\'un Fatihi' :
                  character.id === 'ataturk' ? 'Türkiye Cumhuriyeti\'nin Kurucusu' : 'Fransız İmparatoru'}
               </div>
-              <div className="space-y-2 text-gray-600">
-                <div className="flex items-center space-x-2">
+              <div className="space-y-3 text-gray-600">
+                <div className="flex items-center justify-center space-x-2">
                   <span>📅</span>
                   <span>Dönem: {character.era}</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                   <span>📍</span>
                   <span>Ülke: {character.location}</span>
                 </div>
@@ -803,8 +803,8 @@ const AnimatedAvatar: React.FC<AnimatedAvatarProps> = ({
             </div>
 
             {/* Interactive Greeting */}
-            <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
-              <p className="text-gray-700 text-sm">
+            <div className="mt-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200 shadow-md max-w-md mx-auto">
+              <p className="text-gray-700 text-center leading-relaxed">
                 {greetingMessage}
               </p>
             </div>

@@ -84,8 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('Login attempt:', email, password);
       setIsLoading(true);
-      
-      // Basit demo kullanıcıları (gerçek uygulamada backend API kullanılacak)
+            // Basit demo kullanıcıları (gerçek uygulamada backend API kullanılacak)
       const demoUsers = [
         {
           id: '1',
@@ -148,7 +147,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // LocalStorage'a kaydet
         localStorage.setItem('auth_token', token);
         localStorage.setItem('user_data', JSON.stringify(userWithoutPassword));
-        
         console.log('User logged in successfully:', userWithoutPassword);
         setUser(userWithoutPassword);
         return true;
@@ -167,7 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // Yeni kullanıcı oluştur
+           // Yeni kullanıcı oluştur
       const newUser: User = {
         id: Date.now().toString(),
         username: userData.username,
@@ -206,8 +204,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
-  const updateUser = (updates: Partial<User>) => {
+    const updateUser = (updates: Partial<User>) => {
     if (user) {
+
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
       localStorage.setItem('user_data', JSON.stringify(updatedUser));

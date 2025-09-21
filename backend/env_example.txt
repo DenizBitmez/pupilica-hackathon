@@ -6,6 +6,27 @@ FLASK_DEBUG=True
 HOST=localhost
 PORT=5000
 
+# OpenAI API Key
+OPENAI_API_KEY=your_openai_api_key_here
+
+# JWT Secret Key
+JWT_SECRET_KEY=your_super_secret_jwt_key_here
+
+# Database URL 
+# SQLite (development):
+# DATABASE_URL=sqlite:///pupilica.db
+
+# MSSQL (production):
+# SQL Server Authentication:
+# DATABASE_URL=mssql+pyodbc://username:password@server:port/database?driver=ODBC+Driver+17+for+SQL+Server
+# Örnek: DATABASE_URL=mssql+pyodbc://sa:YourPassword@localhost:1433/PupilicaDB?driver=ODBC+Driver+17+for+SQL+Server
+
+# Windows Authentication:
+# DATABASE_URL=mssql+pyodbc://@server:port/database?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes
+# Örnek: DATABASE_URL=mssql+pyodbc://@LAPTOP-0R87CUAH:1433/PupilicaDB?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes
+
+DATABASE_URL=sqlite:///pupilica.db
+
 # TTS Configuration
 TTS_LANGUAGE=tr
 TTS_SLOW=False

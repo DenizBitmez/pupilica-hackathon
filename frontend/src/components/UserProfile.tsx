@@ -392,3 +392,4 @@ const UserProfile: React.FC<UserProfileProps> = ({ isVisible, onClose, onLogout,
 };
 
 export default UserProfile;
+

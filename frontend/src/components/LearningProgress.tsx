@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   ChartBarIcon, 
   TrophyIcon,
@@ -51,6 +52,7 @@ const LearningProgress: React.FC<LearningProgressProps> = ({
   isVisible, 
   onClose 
 }) => {
+  const { user } = useAuth();
   const [progressData, setProgressData] = useState<ProgressData>({
     totalStudyTime: 0,
     notesCount: 0,
@@ -71,14 +73,70 @@ const LearningProgress: React.FC<LearningProgressProps> = ({
 
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('week');
 
+  // İlerleme verilerini güncelle
+  const updateProgress = (updates: Partial<ProgressData>) => {
+    if (!user) return;
+    
+    const updatedData = { ...progressData, ...updates };
+    setProgressData(updatedData);
+    localStorage.setItem(`progress_${user.id}_${character.id}`, JSON.stringify(updatedData));
+  };
+
+  // Çalışma oturumu ekle
+  const addStudySession = (type: 'chat' | 'quiz' | 'timeline' | 'notes' | 'map', duration: number) => {
+    if (!user) return;
+    
+    const newSession = {
+      date: new Date().toISOString().split('T')[0],
+      duration,
+      type
+    };
+    
+    const updatedSessions = [newSession, ...progressData.studySessions].slice(0, 10);
+    const newTotalTime = progressData.totalStudyTime + duration;
+    
+    updateProgress({
+      studySessions: updatedSessions,
+      totalStudyTime: newTotalTime
+    });
+  };
+
+  // Not sayısını artır
+  const incrementNotes = () => {
+    updateProgress({
+      notesCount: progressData.notesCount + 1
+    });
+  };
+
+  // Olay sayısını artır
+  const incrementEvents = () => {
+    updateProgress({
+      eventsStudied: progressData.eventsStudied + 1
+    });
+  };
+
+  // Quiz sonucu ekle
+  const addQuizResult = (correct: number, total: number) => {
+    updateProgress({
+      quizzesCompleted: progressData.quizzesCompleted + 1,
+      correctAnswers: progressData.correctAnswers + correct,
+      totalQuestions: progressData.totalQuestions + total
+    });
+  };
+
   useEffect(() => {
-    // LocalStorage'dan ilerleme verilerini yükle
-    const savedProgress = localStorage.getItem(`progress_${character.id}`);
+    if (!user) return;
+
+    // LocalStorage'dan kullanıcıya özel ilerleme verilerini yükle
+    const savedProgress = localStorage.getItem(`progress_${user.id}_${character.id}`);
     if (savedProgress) {
       setProgressData(JSON.parse(savedProgress));
     } else {
-      // Örnek veri oluştur
-      const sampleData: ProgressData = {
+      // Demo kullanıcılar için hardcoded veriler, gerçek kullanıcılar için sıfır veriler
+      const isDemoUser = ['ogrenci1@example.com', 'ogrenci2@example.com', 'ogretmen1@example.com'].includes(user.email);
+      
+      const initialData: ProgressData = isDemoUser ? {
+        // Demo kullanıcılar için örnek veriler
         totalStudyTime: 1245, // dakika
         notesCount: 23,
         eventsStudied: 15,
@@ -87,11 +145,11 @@ const LearningProgress: React.FC<LearningProgressProps> = ({
         totalQuestions: 56,
         achievementsUnlocked: 7,
         totalAchievements: 12,
-        currentStreak: 5,
-        longestStreak: 12,
-        level: 3,
-        experience: 340,
-        nextLevelExp: 500,
+        currentStreak: user.currentStreak || 5,
+        longestStreak: user.longestStreak || 12,
+        level: user.level || 3,
+        experience: user.experience || 340,
+        nextLevelExp: user.level ? (user.level * 100) + 100 : 500,
         studySessions: [
           { date: '2024-01-15', duration: 45, type: 'chat' },
           { date: '2024-01-14', duration: 30, type: 'quiz' },
@@ -104,11 +162,29 @@ const LearningProgress: React.FC<LearningProgressProps> = ({
           { week: 'Geçen Hafta', studyTime: 180, eventsStudied: 4, notesCreated: 6 },
           { week: '2 Hafta Önce', studyTime: 160, eventsStudied: 3, notesCreated: 4 }
         ]
+      } : {
+        // Gerçek kullanıcılar için sıfır veriler
+        totalStudyTime: 0,
+        notesCount: 0,
+        eventsStudied: 0,
+        quizzesCompleted: 0,
+        correctAnswers: 0,
+        totalQuestions: 0,
+        achievementsUnlocked: 0,
+        totalAchievements: 12,
+        currentStreak: user.currentStreak || 0,
+        longestStreak: user.longestStreak || 0,
+        level: user.level || 1,
+        experience: user.experience || 0,
+        nextLevelExp: user.level ? (user.level * 100) + 100 : 100,
+        studySessions: [],
+        weeklyProgress: []
       };
-      setProgressData(sampleData);
-      localStorage.setItem(`progress_${character.id}`, JSON.stringify(sampleData));
+      
+      setProgressData(initialData);
+      localStorage.setItem(`progress_${user.id}_${character.id}`, JSON.stringify(initialData));
     }
-  }, [character.id]);
+  }, [character.id, user]);
 
   const getAccuracy = () => {
     if (progressData.totalQuestions === 0) return 0;

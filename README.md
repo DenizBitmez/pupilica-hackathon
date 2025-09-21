@@ -174,7 +174,7 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 - **Frontend**: React.js, TypeScript, Tailwind CSS
 - **Backend**: Python Flask, WebSocket
 - **UI/UX**: Modern, responsive tasarım
-- **Eğitim İçeriği**: Tarih uzmanları tarafından hazırlanmış
+- **Eğitim İçeriği**: Tarihi kaynaklar baz alınarak hazırlanmıştır.
 
 ## 🎉 Teşekkürler
 
